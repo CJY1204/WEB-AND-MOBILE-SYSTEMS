@@ -1,0 +1,108 @@
+@model DailyReportVM
+@{
+    Layout = "~/Views/Admin/_AdminLayout.cshtml";
+    ViewData["Title"] = "Daily Sales Report";
+    ViewBag.ActiveMenu = "ReportDaily";
+    DateTime prev = (DateTime)ViewBag.PrevDate;
+    DateTime next = (DateTime)ViewBag.NextDate;
+    DateTime today = (DateTime)ViewBag.Today;
+}
+
+<div class="admin-page-header">
+    <div>
+        <h2>Daily Sales Report</h2>
+        <span class="text-muted small">@Model.Date.ToString("dddd, MMMM dd, yyyy")</span>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+        <a asp-action="Daily" asp-route-date="@prev.ToString("yyyy-MM-dd")" class="btn btn-outline-admin rounded-pill">&larr; Prev</a>
+        <form method="get" asp-action="Daily" class="d-flex align-items-center gap-2">
+            <input type="date" name="date" value="@Model.Date.ToString("yyyy-MM-dd")" class="form-control rounded-pill" style="width:180px;" />
+            <button type="submit" class="btn btn-admin rounded-pill px-3 fw-bold">View</button>
+        </form>
+        <a asp-action="Daily" asp-route-date="@today.ToString("yyyy-MM-dd")" class="btn btn-outline-secondary rounded-pill">Today</a>
+        <a asp-action="Daily" asp-route-date="@next.ToString("yyyy-MM-dd")" class="btn btn-outline-admin rounded-pill">Next &rarr;</a>
+        <a asp-action="ExportDailyPdf" asp-route-date="@Model.Date.ToString("yyyy-MM-dd")" class="btn btn-danger rounded-pill px-4 fw-bold">
+            <i class="fa-solid fa-file-pdf me-1"></i> Export PDF
+        </a>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-4 mb-3">
+        <div class="card border-0 shadow-sm rounded-4 p-4 text-white bg-dark">
+            <h6 class="text-uppercase opacity-75">Total Revenue</h6>
+            <h2 class="display-6 fw-bold">RM @Model.TotalRevenue.ToString("N2")</h2>
+            <small class="opacity-75">@Model.Date.ToString("dddd, MMMM dd, yyyy")</small>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="card border-0 shadow-sm rounded-4 p-4 bg-light text-dark">
+            <h6 class="text-uppercase text-muted">Total Orders</h6>
+            <h2 class="display-6 fw-bold text-orange">@Model.TotalOrders</h2>
+            <small class="text-muted">Completed &amp; in-progress orders</small>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="card border-0 shadow-sm rounded-4 p-4 bg-light text-dark">
+            <h6 class="text-uppercase text-muted">Avg. Order Value</h6>
+            <h2 class="display-6 fw-bold text-success">RM @Model.AvgOrderValue.ToString("N2")</h2>
+            <small class="text-muted">Revenue &divide; orders</small>
+        </div>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm rounded-4 overflow-hidden admin-table-card">
+    <div class="p-4 pb-0">
+        <h4 class="fw-bold">Items Sold (@Model.Items.Count)</h4>
+    </div>
+    @if (Model.Items.Count == 0)
+    {
+        <div class="p-4">
+            <div class="alert alert-info rounded-4">No sales recorded for this day.</div>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Product</th>
+                        <th class="text-center">Quantity</th>
+                        <th class="text-end">Revenue</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{
+                        int rank = 1;
+                        decimal maxQty = Model.Items.Count > 0 ? Model.Items.Max(x => x.Quantity) : 1;
+                    }
+                    @foreach (var item in Model.Items)
+                    {
+                        decimal pct = maxQty > 0 ? (decimal)item.Quantity / maxQty * 100 : 0;
+                        <tr>
+                            <td class="text-muted">@rank</td>
+                            <td>
+                                <div class="fw-semibold">@item.ProductName</div>
+                                <div class="progress rounded-pill mt-1" style="height:6px;">
+                                    <div class="progress-bar bg-warning" style="width:@pct.ToString("0")%"></div>
+                                </div>
+                            </td>
+                            <td class="text-center fw-bold">@item.Quantity</td>
+                            <td class="text-end fw-semibold">RM @item.Revenue.ToString("N2")</td>
+                        </tr>
+                        rank++;
+                    }
+                </tbody>
+                <tfoot>
+                    <tr class="table-dark fw-bold">
+                        <td colspan="2">Total</td>
+                        <td class="text-center">@Model.Items.Sum(x => x.Quantity)</td>
+                        <td class="text-end">RM @Model.Items.Sum(x => x.Revenue).ToString("N2")</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    }
+</div>

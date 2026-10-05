@@ -1,0 +1,1355 @@
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using QuestPDF.Fluent;
+using QuestPDF.Helpers;
+using QuestPDF.Infrastructure;
+using RestaurantSystem.Models;
+using System.Linq;
+using static RestaurantSystem.Models.ViewModels;
+
+namespace RestaurantSystem.Controllers
+{
+    [Authorize(Roles = "ADMIN")] // Only logged-in admins can access every action in this controller
+    public class AdminController : Controller
+    {
+        private readonly RestaurantDbContext db;
+        private readonly Helper hp;
+
+        public AdminController(RestaurantDbContext db, Helper hp)
+        {
+            this.db = db;
+            this.hp = hp;
+        }
+
+        public IActionResult Dashboard()
+        {
+            var today = DateTime.Today;
+            var tomorrow = today.AddDays(1);
+
+            // Today's revenue: sum of non-cancelled orders placed today
+            ViewBag.TodayRevenue = db.Orders
+                .Where(o => o.OrderDate >= today && o.OrderDate < tomorrow && o.OrderStatus != "CANCELLED")
+                .Sum(o => (decimal?)o.TotalAmount) ?? 0m;
+
+            // Active orders: still pending (not yet completed or cancelled)
+            ViewBag.ActiveOrders = db.Orders.Count(o => o.OrderStatus == "PENDING");
+
+            var allTables = db.Tables.OrderBy(t => t.TableId).ToList();
+            ViewBag.Tables = allTables;
+            ViewBag.OccupiedCount = allTables.Count(t => t.IsOccupied);
+            ViewBag.TotalTables = allTables.Count;
+
+            return View();
+        }
+
+        // ==========================================
+        // [Category CRUD] Category Management
+        // ==========================================
+
+        public IActionResult Categories()
+        {
+            var categories = db.Categories.ToList();
+            return View(categories);
+        }
+
+        public IActionResult CreateCategory()
+        {
+            return View(new Category { CategoryName = "" });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult CreateCategory(Category category)
+        {
+            if (!ModelState.IsValid) return View(category);
+
+            db.Categories.Add(category);
+            db.SaveChanges();
+            TempData["Info"] = "Category created successfully.";
+            return RedirectToAction("Categories");
+        }
+
+        public IActionResult EditCategory(int id)
+        {
+            var category = db.Categories.Find(id);
+            if (category == null) return NotFound();
+            return View(category);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult EditCategory(Category category)
+        {
+            if (!ModelState.IsValid) return View(category);
+
+            var existing = db.Categories.Find(category.CategoryId);
+            if (existing == null) return NotFound();
+
+            existing.CategoryName = category.CategoryName;
+            db.SaveChanges();
+            TempData["Info"] = "Category updated successfully.";
+            return RedirectToAction("Categories");
+        }
+
+        public IActionResult DeleteCategory(int id)
+        {
+            var category = db.Categories.Find(id);
+            if (category == null) return NotFound();
+
+            ViewBag.HasProducts = db.Products.Any(p => p.CategoryId == id);
+            return View(category);
+        }
+
+        [HttpPost, ActionName("DeleteCategory")]
+        [ValidateAntiForgeryToken]
+        public IActionResult DeleteCategoryConfirmed(int id)
+        {
+            var category = db.Categories.Find(id);
+            if (category == null) return NotFound();
+
+            if (db.Products.Any(p => p.CategoryId == id))
+            {
+                ViewBag.HasProducts = true;
+                return View("DeleteCategory", category);
+            }
+
+            db.Categories.Remove(category);
+            db.SaveChanges();
+            TempData["Info"] = "Category deleted successfully.";
+            return RedirectToAction("Categories");
+        }
+
+        // ==========================================
+        // [Product CRUD] Product Management
+        // ==========================================
+
+        public IActionResult Products()
+        {
+            var products = db.Products.Include(p => p.Category).ToList();
+            return View(products);
+        }
+
+        public IActionResult CreateProduct()
+        {
+            ViewBag.Categories = db.Categories.ToList();
+            return View(new Product { ProductName = "" });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CreateProduct(Product product, IFormFile? imageFile)
+        {
+            ViewBag.Categories = db.Categories.ToList();
+            if (!ModelState.IsValid) return View(product);
+
+            // Save first so product.ProductId is actually generated by the DB —
+            // the previous version tried to name the image file using ProductId
+            // BEFORE this SaveChanges, so it always got saved as "0_filename.jpg"
+            // and the image ended up broken after creation.
+            db.Products.Add(product);
+            db.SaveChanges();
+
+            if (imageFile != null && imageFile.Length > 0)
+            {
+                var fileName = $"{product.ProductId}_{Path.GetFileName(imageFile.FileName)}";
+                var path = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/images", fileName);
+                using (var stream = new FileStream(path, FileMode.Create))
+                {
+                    await imageFile.CopyToAsync(stream);
+                }
+                product.ImageUrl = "/images/" + fileName;
+                db.SaveChanges();
+            }
+
+            TempData["Info"] = "Product created successfully.";
+            return RedirectToAction("Products");
+        }
+
+        public IActionResult EditProduct(int id)
+        {
+            var product = db.Products.Find(id);
+            if (product == null) return NotFound();
+
+            ViewBag.Categories = db.Categories.ToList();
+            return View(product);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EditProduct(Product product, IFormFile? imageFile)
+        {
+            ViewBag.Categories = db.Categories.ToList();
+            if (!ModelState.IsValid) return View(product);
+
+            var existing = db.Products.Find(product.ProductId);
+            if (existing == null) return NotFound();
+
+            existing.ProductName = product.ProductName;
+            existing.CategoryId = product.CategoryId;
+            existing.Price = product.Price;
+            existing.StockQuantity = product.StockQuantity; // was product.Stock — renamed to match our schema
+            existing.Description = product.Description;
+
+            if (imageFile != null && imageFile.Length > 0)
+            {
+                if (!string.IsNullOrEmpty(existing.ImageUrl))
+                {
+                    var oldPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/images", Path.GetFileName(existing.ImageUrl));
+                    if (System.IO.File.Exists(oldPath)) System.IO.File.Delete(oldPath);
+                }
+
+                var fileName = $"{existing.ProductId}_{Path.GetFileName(imageFile.FileName)}";
+                var path = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/images", fileName);
+                using (var stream = new FileStream(path, FileMode.Create))
+                {
+                    await imageFile.CopyToAsync(stream);
+                }
+                existing.ImageUrl = "/images/" + fileName;
+            }
+
+            db.SaveChanges();
+            TempData["Info"] = "Product updated successfully.";
+            return RedirectToAction("Products");
+        }
+
+        public IActionResult DeleteProduct(int id)
+        {
+            var product = db.Products.Include(p => p.Category).FirstOrDefault(p => p.ProductId == id);
+            if (product == null) return NotFound();
+            return View(product);
+        }
+
+        [HttpPost, ActionName("DeleteProduct")]
+        [ValidateAntiForgeryToken]
+        public IActionResult DeleteProductConfirmed(int id)
+        {
+            var product = db.Products.Find(id);
+            if (product == null) return NotFound();
+
+            if (!string.IsNullOrEmpty(product.ImageUrl))
+            {
+                var path = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/images", Path.GetFileName(product.ImageUrl));
+                if (System.IO.File.Exists(path)) System.IO.File.Delete(path);
+            }
+
+            db.Products.Remove(product);
+            db.SaveChanges();
+            TempData["Info"] = "Product deleted successfully.";
+            return RedirectToAction("Products");
+        }
+
+        // ==========================================
+        // [POST: Admin/DeleteProductsBatch] Delete multiple products at once
+        // ==========================================
+        [HttpPost]
+        public IActionResult DeleteProductsBatch(int[] ids)
+        {
+            if (ids == null || ids.Length == 0)
+            {
+                TempData["Error"] = "No products selected.";
+                return RedirectToAction("Products");
+            }
+
+            var products = db.Products.Where(p => ids.Contains(p.ProductId)).ToList();
+            foreach (var product in products)
+            {
+                if (!string.IsNullOrEmpty(product.ImageUrl))
+                {
+                    var path = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/images", Path.GetFileName(product.ImageUrl));
+                    if (System.IO.File.Exists(path)) System.IO.File.Delete(path);
+                }
+            }
+
+            db.Products.RemoveRange(products);
+            db.SaveChanges();
+
+            TempData["Info"] = $"{products.Count} product(s) deleted successfully.";
+            return RedirectToAction("Products");
+        }
+
+        // ==========================================
+        // [GET: Admin/Orders] Order management list (status filter + search + order details)
+        // ==========================================
+        public IActionResult Orders(string? status, string? search)
+        {
+            IQueryable<Order> query = db.Orders;
+
+            // Status filter: ALL / PENDING / COMPLETED / CANCELLED
+            if (!string.IsNullOrEmpty(status) && status != "ALL")
+            {
+                query = query.Where(o => o.OrderStatus == status);
+            }
+
+            var orders = query.OrderByDescending(o => o.OrderDate).ToList();
+
+            // Manually load related data (no navigation properties on Order/OrderDetail by design)
+            var userIds = orders.Select(o => o.UserId).Distinct().ToList();
+            var tableIds = orders.Where(o => o.TableId.HasValue).Select(o => o.TableId!.Value).Distinct().ToList();
+            var orderIds = orders.Select(o => o.OrderId).Distinct().ToList();
+
+            var users = db.Users.Where(u => userIds.Contains(u.UserId)).ToDictionary(u => u.UserId);
+            var tables = db.Tables.Where(t => tableIds.Contains(t.TableId)).ToDictionary(t => t.TableId);
+            var allDetails = db.OrderDetails.Where(d => orderIds.Contains(d.OrderId)).ToList();
+            var productIds = allDetails.Select(d => d.ProductId).Distinct().ToList();
+            var products = db.Products.Where(p => productIds.Contains(p.ProductId)).ToDictionary(p => p.ProductId);
+
+            var orderVMs = orders.Select(o => new OrderVM
+            {
+                OrderId = o.OrderId,
+                CustomerName = users.TryGetValue(o.UserId, out var user) ? user.Username : "Unknown",
+                TableName = o.TableId.HasValue && tables.TryGetValue(o.TableId.Value, out var tbl) ? tbl.TableName : null,
+                OrderDate = o.OrderDate,
+                TotalAmount = o.TotalAmount,
+                OrderStatus = o.OrderStatus,
+                Details = allDetails
+                    .Where(d => d.OrderId == o.OrderId)
+                    .Select(d => new OrderDetailVM
+                    {
+                        ProductName = products.TryGetValue(d.ProductId, out var prod) ? prod.ProductName : "Unknown",
+                        Quantity = d.Quantity,
+                        PriceAtOrder = d.PriceAtOrder
+                    }).ToList()
+            }).ToList();
+
+            // Keyword search: order number / customer name / table name
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                search = search.Trim();
+                orderVMs = orderVMs.Where(o =>
+                    o.OrderId.ToString().Contains(search) ||
+                    o.CustomerName.Contains(search, StringComparison.OrdinalIgnoreCase) ||
+                    (o.TableName != null && o.TableName.Contains(search, StringComparison.OrdinalIgnoreCase))
+                ).ToList();
+            }
+
+            ViewBag.SelectedStatus = string.IsNullOrEmpty(status) ? "ALL" : status;
+            ViewBag.Search = search;
+
+            return View(orderVMs);
+        }
+
+        // ==========================================
+        // [POST: Admin/UpdateOrderStatus] Update a single order's status
+        // ==========================================
+        [HttpPost]
+        public IActionResult UpdateOrderStatus(int id, string status)
+        {
+            var order = db.Orders.Find(id);
+            if (order == null)
+            {
+                return NotFound();
+            }
+
+            // Only 3 states are in active use (see OrderController) — "COOKING" was
+            // considered and deliberately left out for now.
+            string[] validStatuses = { "PENDING", "COMPLETED", "CANCELLED" };
+            if (!validStatuses.Contains(status))
+            {
+                TempData["Error"] = "Invalid order status.";
+                return RedirectToAction("Orders");
+            }
+
+            order.OrderStatus = status;
+            db.SaveChanges();
+
+            TempData["Info"] = $"Order #{order.OrderId} status updated to {status}.";
+            return RedirectToAction("Orders");
+        }
+
+        // ==========================================
+        // [POST: Admin/UpdateOrderStatusBatch] Update multiple orders' status at once
+        // ==========================================
+        [HttpPost]
+        public IActionResult UpdateOrderStatusBatch(int[] ids, string status)
+        {
+            string[] validStatuses = { "PENDING", "COMPLETED", "CANCELLED" };
+            if (!validStatuses.Contains(status))
+            {
+                TempData["Error"] = "Invalid order status.";
+                return RedirectToAction("Orders");
+            }
+
+            if (ids == null || ids.Length == 0)
+            {
+                TempData["Error"] = "No orders selected.";
+                return RedirectToAction("Orders");
+            }
+
+            var orders = db.Orders.Where(o => ids.Contains(o.OrderId)).ToList();
+            foreach (var order in orders)
+            {
+                order.OrderStatus = status;
+            }
+            db.SaveChanges();
+
+            TempData["Info"] = $"{orders.Count} order(s) updated to {status}.";
+            return RedirectToAction("Orders");
+        }
+
+        // ==========================================
+        // [GET: Admin/ExportOrdersPdf] Export filtered orders as PDF
+        // ==========================================
+        [HttpGet]
+        public IActionResult ExportOrdersPdf(string? status, string? search)
+        {
+            IQueryable<Order> query = db.Orders;
+
+            if (!string.IsNullOrEmpty(status) && status != "ALL")
+            {
+                query = query.Where(o => o.OrderStatus == status);
+            }
+
+            var orders = query.OrderByDescending(o => o.OrderDate).ToList();
+
+            var userIds = orders.Select(o => o.UserId).Distinct().ToList();
+            var tableIds = orders.Where(o => o.TableId.HasValue).Select(o => o.TableId!.Value).Distinct().ToList();
+
+            var users = db.Users.Where(u => userIds.Contains(u.UserId)).ToDictionary(u => u.UserId);
+            var tables = db.Tables.Where(t => tableIds.Contains(t.TableId)).ToDictionary(t => t.TableId);
+
+            var orderVMs = orders.Select(o => new OrderVM
+            {
+                OrderId = o.OrderId,
+                CustomerName = users.TryGetValue(o.UserId, out var user) ? user.Username : "Unknown",
+                TableName = o.TableId.HasValue && tables.TryGetValue(o.TableId.Value, out var tbl) ? tbl.TableName : null,
+                OrderDate = o.OrderDate,
+                TotalAmount = o.TotalAmount,
+                OrderStatus = o.OrderStatus
+            }).ToList();
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                search = search.Trim();
+                orderVMs = orderVMs.Where(o =>
+                    o.OrderId.ToString().Contains(search) ||
+                    o.CustomerName.Contains(search, StringComparison.OrdinalIgnoreCase) ||
+                    (o.TableName != null && o.TableName.Contains(search, StringComparison.OrdinalIgnoreCase))
+                ).ToList();
+            }
+
+            string statusLabel = string.IsNullOrEmpty(status) || status == "ALL" ? "All" : status;
+            var now = DateTime.Now;
+
+            var doc = Document.Create(container =>
+            {
+                container.Page(page =>
+                {
+                    page.Size(PageSizes.A4);
+                    page.MarginHorizontal(30);
+                    page.MarginVertical(30);
+
+                    page.Content().Column(col =>
+                    {
+                        col.Item().Text("Order Management Report")
+                            .FontSize(20).Bold().FontColor(Colors.Grey.Darken3);
+
+                        col.Item().PaddingTop(2).Text($"Status: {statusLabel} | Generated: {now:dd MMM yyyy, HH:mm}")
+                            .FontSize(10).FontColor(Colors.Grey.Medium);
+
+                        if (!string.IsNullOrWhiteSpace(search))
+                        {
+                            col.Item().Text($"Search: \"{search}\"")
+                                .FontSize(10).FontColor(Colors.Grey.Medium);
+                        }
+
+                        col.Item().PaddingVertical(8);
+
+                        col.Item().Row(row =>
+                        {
+                            row.RelativeItem().Background(Colors.Grey.Lighten3).Padding(10).Column(c =>
+                            {
+                                c.Item().Text("Total Orders").FontSize(10).FontColor(Colors.Grey.Medium);
+                                c.Item().Text($"{orderVMs.Count}").FontSize(16).Bold();
+                            });
+                            row.ConstantItem(10);
+                            row.RelativeItem().Background(Colors.Grey.Lighten3).Padding(10).Column(c =>
+                            {
+                                c.Item().Text("Total Revenue").FontSize(10).FontColor(Colors.Grey.Medium);
+                                c.Item().Text($"RM {orderVMs.Sum(o => o.TotalAmount):N2}").FontSize(16).Bold();
+                            });
+                            row.ConstantItem(10);
+                            row.RelativeItem().Background(Colors.Grey.Lighten3).Padding(10).Column(c =>
+                            {
+                                c.Item().Text("Filter").FontSize(10).FontColor(Colors.Grey.Medium);
+                                c.Item().Text(statusLabel).FontSize(16).Bold();
+                            });
+                        });
+
+                        col.Item().PaddingVertical(8);
+
+                        if (orderVMs.Count > 0)
+                        {
+                            col.Item().Table(table =>
+                            {
+                                table.ColumnsDefinition(columns =>
+                                {
+                                    columns.RelativeColumn(1);
+                                    columns.RelativeColumn(1);
+                                    columns.RelativeColumn(2);
+                                    columns.RelativeColumn(2);
+                                    columns.RelativeColumn(2);
+                                    columns.RelativeColumn(2);
+                                    columns.RelativeColumn(2);
+                                });
+
+                                table.Header(header =>
+                                {
+                                    header.Cell().Background(Colors.Grey.Darken3).Padding(6).Text("#").FontColor(Colors.White).Bold();
+                                    header.Cell().Background(Colors.Grey.Darken3).Padding(6).Text("Order ID").FontColor(Colors.White).Bold();
+                                    header.Cell().Background(Colors.Grey.Darken3).Padding(6).Text("Customer").FontColor(Colors.White).Bold();
+                                    header.Cell().Background(Colors.Grey.Darken3).Padding(6).Text("Table").FontColor(Colors.White).Bold();
+                                    header.Cell().Background(Colors.Grey.Darken3).Padding(6).Text("Date").FontColor(Colors.White).Bold();
+                                    header.Cell().Background(Colors.Grey.Darken3).Padding(6).AlignRight().Text("Total").FontColor(Colors.White).Bold();
+                                    header.Cell().Background(Colors.Grey.Darken3).Padding(6).Text("Status").FontColor(Colors.White).Bold();
+                                });
+
+                                for (int i = 0; i < orderVMs.Count; i++)
+                                {
+                                    var o = orderVMs[i];
+                                    table.Cell().Padding(6).BorderBottom(1).BorderColor(Colors.Grey.Lighten1)
+                                        .Text($"{i + 1}");
+                                    table.Cell().Padding(6).BorderBottom(1).BorderColor(Colors.Grey.Lighten1)
+                                        .Text($"#{o.OrderId}");
+                                    table.Cell().Padding(6).BorderBottom(1).BorderColor(Colors.Grey.Lighten1)
+                                        .Text(o.CustomerName);
+                                    table.Cell().Padding(6).BorderBottom(1).BorderColor(Colors.Grey.Lighten1)
+                                        .Text(o.TableName ?? "Takeaway");
+                                    table.Cell().Padding(6).BorderBottom(1).BorderColor(Colors.Grey.Lighten1)
+                                        .Text(o.OrderDate.ToString("dd MMM yyyy, HH:mm"));
+                                    table.Cell().Padding(6).BorderBottom(1).BorderColor(Colors.Grey.Lighten1)
+                                        .AlignRight().Text($"RM {o.TotalAmount:N2}");
+                                    table.Cell().Padding(6).BorderBottom(1).BorderColor(Colors.Grey.Lighten1)
+                                        .Text(o.OrderStatus);
+                                }
+                            });
+
+                            col.Item().Background(Colors.Grey.Darken3).Padding(6).Row(row =>
+                            {
+                                row.RelativeItem().Text($"Total ({orderVMs.Count} orders)").FontColor(Colors.White).Bold();
+                                row.RelativeItem().AlignRight().Text($"RM {orderVMs.Sum(o => o.TotalAmount):N2}").FontColor(Colors.White).Bold();
+                            });
+                        }
+                        else
+                        {
+                            col.Item().Text("No orders found matching the current filters.").Italic().FontColor(Colors.Grey.Medium);
+                        }
+                    });
+
+                    page.Footer().AlignCenter().Text("BITE Restaurant — Order Management Report")
+                        .FontSize(9).FontColor(Colors.Grey.Darken1);
+                });
+            });
+
+            var pdfBytes = doc.GeneratePdf();
+            return File(pdfBytes, "application/pdf", $"Orders_Report_{now:yyyyMMdd_HHmmss}.pdf");
+        }
+
+        // ==========================================
+        // [GET: Admin/ExportUsersPdf] Export filtered users as PDF
+        // ==========================================
+        [HttpGet]
+        public IActionResult ExportUsersPdf(string? role, string? search)
+        {
+            IQueryable<User> query = db.Users;
+
+            if (!string.IsNullOrEmpty(role) && role != "ALL")
+            {
+                query = query.Where(u => u.Role == role);
+            }
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                search = search.Trim();
+                query = query.Where(u =>
+                    u.Username.Contains(search) ||
+                    u.FullName.Contains(search) ||
+                    u.Email.Contains(search) ||
+                    (u.PhoneNumber != null && u.PhoneNumber.Contains(search)));
+            }
+
+            var users = query.OrderBy(u => u.Role).ThenBy(u => u.Username).ToList();
+
+            string roleLabel = string.IsNullOrEmpty(role) || role == "ALL" ? "All" : role;
+            var now = DateTime.Now;
+            int totalMembers = users.Count(u => u.Role == "MEMBER");
+            int totalAdmins = users.Count(u => u.Role == "ADMIN");
+
+            var doc = Document.Create(container =>
+            {
+                container.Page(page =>
+                {
+                    page.Size(PageSizes.A4);
+                    page.MarginHorizontal(30);
+                    page.MarginVertical(30);
+
+                    page.Content().Column(col =>
+                    {
+                        col.Item().Text("User Management Report")
+                            .FontSize(20).Bold().FontColor(Colors.Grey.Darken3);
+
+                        col.Item().PaddingTop(2).Text($"Role: {roleLabel} | Generated: {now:dd MMM yyyy, HH:mm}")
+                            .FontSize(10).FontColor(Colors.Grey.Medium);
+
+                        if (!string.IsNullOrWhiteSpace(search))
+                        {
+                            col.Item().Text($"Search: \"{search}\"")
+                                .FontSize(10).FontColor(Colors.Grey.Medium);
+                        }
+
+                        col.Item().PaddingVertical(8);
+
+                        col.Item().Row(row =>
+                        {
+                            row.RelativeItem().Background(Colors.Grey.Lighten3).Padding(10).Column(c =>
+                            {
+                                c.Item().Text("Total Users").FontSize(10).FontColor(Colors.Grey.Medium);
+                                c.Item().Text($"{users.Count}").FontSize(16).Bold();
+                            });
+                            row.ConstantItem(10);
+                            row.RelativeItem().Background(Colors.Grey.Lighten3).Padding(10).Column(c =>
+                            {
+                                c.Item().Text("Members").FontSize(10).FontColor(Colors.Grey.Medium);
+                                c.Item().Text($"{totalMembers}").FontSize(16).Bold();
+                            });
+                            row.ConstantItem(10);
+                            row.RelativeItem().Background(Colors.Grey.Lighten3).Padding(10).Column(c =>
+                            {
+                                c.Item().Text("Admins").FontSize(10).FontColor(Colors.Grey.Medium);
+                                c.Item().Text($"{totalAdmins}").FontSize(16).Bold();
+                            });
+                        });
+
+                        col.Item().PaddingVertical(8);
+
+                        if (users.Count > 0)
+                        {
+                            col.Item().Table(table =>
+                            {
+                                table.ColumnsDefinition(columns =>
+                                {
+                                    columns.RelativeColumn(1);
+                                    columns.RelativeColumn(2);
+                                    columns.RelativeColumn(3);
+                                    columns.RelativeColumn(3);
+                                    columns.RelativeColumn(2);
+                                    columns.RelativeColumn(1.5f);
+                                    columns.RelativeColumn(1.5f);
+                                });
+
+                                table.Header(header =>
+                                {
+                                    header.Cell().Background(Colors.Grey.Darken3).Padding(6).Text("#").FontColor(Colors.White).Bold();
+                                    header.Cell().Background(Colors.Grey.Darken3).Padding(6).Text("Username").FontColor(Colors.White).Bold();
+                                    header.Cell().Background(Colors.Grey.Darken3).Padding(6).Text("Full Name").FontColor(Colors.White).Bold();
+                                    header.Cell().Background(Colors.Grey.Darken3).Padding(6).Text("Email").FontColor(Colors.White).Bold();
+                                    header.Cell().Background(Colors.Grey.Darken3).Padding(6).Text("Phone").FontColor(Colors.White).Bold();
+                                    header.Cell().Background(Colors.Grey.Darken3).Padding(6).Text("Role").FontColor(Colors.White).Bold();
+                                    header.Cell().Background(Colors.Grey.Darken3).Padding(6).Text("Status").FontColor(Colors.White).Bold();
+                                });
+
+                                for (int i = 0; i < users.Count; i++)
+                                {
+                                    var u = users[i];
+                                    table.Cell().Padding(6).BorderBottom(1).BorderColor(Colors.Grey.Lighten1)
+                                        .Text($"{i + 1}");
+                                    table.Cell().Padding(6).BorderBottom(1).BorderColor(Colors.Grey.Lighten1)
+                                        .Text(u.Username);
+                                    table.Cell().Padding(6).BorderBottom(1).BorderColor(Colors.Grey.Lighten1)
+                                        .Text(u.FullName);
+                                    table.Cell().Padding(6).BorderBottom(1).BorderColor(Colors.Grey.Lighten1)
+                                        .Text(u.Email);
+                                    table.Cell().Padding(6).BorderBottom(1).BorderColor(Colors.Grey.Lighten1)
+                                        .Text(u.PhoneNumber ?? "-");
+                                    table.Cell().Padding(6).BorderBottom(1).BorderColor(Colors.Grey.Lighten1)
+                                        .Text(u.Role == "ADMIN" ? "Admin" : "Member");
+                                    table.Cell().Padding(6).BorderBottom(1).BorderColor(Colors.Grey.Lighten1)
+                                        .Text(u.IsBlocked ? "Blocked" : "Active");
+                                }
+                            });
+
+                            col.Item().Background(Colors.Grey.Darken3).Padding(6).Row(row =>
+                            {
+                                row.RelativeItem().Text($"Total: {users.Count} user(s)").FontColor(Colors.White).Bold();
+                            });
+                        }
+                        else
+                        {
+                            col.Item().Text("No users found matching the current filters.").Italic().FontColor(Colors.Grey.Medium);
+                        }
+                    });
+
+                    page.Footer().AlignCenter().Text("BITE Restaurant — User Management Report")
+                        .FontSize(9).FontColor(Colors.Grey.Darken1);
+                });
+            });
+
+            var pdfBytes = doc.GeneratePdf();
+            return File(pdfBytes, "application/pdf", $"Users_Report_{now:yyyyMMdd_HHmmss}.pdf");
+        }
+
+        // ==========================================
+        // [GET: Admin/UserManage] User management list (role filter + search)
+        // ==========================================
+        public IActionResult UserManage(string? role, string? search)
+        {
+            IQueryable<User> query = db.Users;
+
+            // Role filter: ALL / MEMBER / ADMIN
+            if (!string.IsNullOrEmpty(role) && role != "ALL")
+            {
+                query = query.Where(u => u.Role == role);
+            }
+
+            // Keyword search: username / full name / email / phone
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                search = search.Trim();
+                query = query.Where(u =>
+                    u.Username.Contains(search) ||
+                    u.FullName.Contains(search) ||
+                    u.Email.Contains(search) ||
+                    (u.PhoneNumber != null && u.PhoneNumber.Contains(search)));
+            }
+
+            ViewBag.SelectedRole = string.IsNullOrEmpty(role) ? "ALL" : role;
+            ViewBag.Search = search;
+
+            return View(query.OrderBy(u => u.Role).ThenBy(u => u.Username).ToList());
+        }
+
+        // ==========================================
+        // [GET: Admin/UserCreate] New user form
+        // ==========================================
+        [HttpGet]
+        public IActionResult UserCreate()
+        {
+            return View(new UserVM { Username = "", Email = "", FullName = "" });
+        }
+
+        // ==========================================
+        // [POST: Admin/UserCreate] Submit new user
+        // ==========================================
+        [HttpPost]
+        public IActionResult UserCreate(UserVM vm)
+        {
+            if (ModelState.IsValid)
+            {
+                // Password is required when creating
+                if (string.IsNullOrWhiteSpace(vm.Password))
+                {
+                    ModelState.AddModelError("Password", "Please enter password for the new user.");
+                    return View(vm);
+                }
+
+                // Uniqueness checks
+                if (db.Users.Any(u => u.Username == vm.Username))
+                {
+                    ModelState.AddModelError("Username", "This username is already taken.");
+                    return View(vm);
+                }
+                if (db.Users.Any(u => u.Email == vm.Email))
+                {
+                    ModelState.AddModelError("Email", "This email address is already registered.");
+                    return View(vm);
+                }
+
+                var user = new User
+                {
+                    Username = vm.Username,
+                    Email = vm.Email,
+                    FullName = vm.FullName,
+                    PhoneNumber = vm.PhoneNumber ?? "",
+                    Address = vm.Address,
+                    Role = vm.Role,
+                    IsBlocked = false,
+                    Password = hp.HashPassword(vm.Password)
+                };
+
+                db.Users.Add(user);
+                db.SaveChanges();
+
+                TempData["Info"] = $"User '{user.Username}' created successfully.";
+                return RedirectToAction("UserManage");
+            }
+            return View(vm);
+        }
+
+        // ==========================================
+        // [GET: Admin/UserEdit] Edit user form
+        // ==========================================
+        [HttpGet]
+        public IActionResult UserEdit(int id)
+        {
+            var user = db.Users.Find(id);
+            if (user == null)
+            {
+                return NotFound();
+            }
+
+            var vm = new UserVM
+            {
+                UserId = user.UserId,
+                Username = user.Username,
+                Email = user.Email,
+                FullName = user.FullName,
+                PhoneNumber = user.PhoneNumber,
+                Address = user.Address,
+                Role = user.Role,
+                IsBlocked = user.IsBlocked
+            };
+            return View(vm);
+        }
+
+        // ==========================================
+        // [POST: Admin/UserEdit] Submit edited user
+        // ==========================================
+        [HttpPost]
+        public IActionResult UserEdit(UserVM vm)
+        {
+            var user = db.Users.Find(vm.UserId);
+            if (user == null)
+            {
+                return NotFound();
+            }
+
+            if (ModelState.IsValid)
+            {
+                // Uniqueness checks (excluding self)
+                if (db.Users.Any(u => u.Username == vm.Username && u.UserId != vm.UserId))
+                {
+                    ModelState.AddModelError("Username", "This username is already taken.");
+                    return View(vm);
+                }
+                if (db.Users.Any(u => u.Email == vm.Email && u.UserId != vm.UserId))
+                {
+                    ModelState.AddModelError("Email", "This email address is already registered.");
+                    return View(vm);
+                }
+
+                user.Username = vm.Username;
+                user.Email = vm.Email;
+                user.FullName = vm.FullName;
+                user.PhoneNumber = vm.PhoneNumber ?? "";
+                user.Address = vm.Address;
+                user.Role = vm.Role;
+
+                // Blank password = don't change it
+                if (!string.IsNullOrWhiteSpace(vm.Password))
+                {
+                    user.Password = hp.HashPassword(vm.Password);
+                }
+
+                db.SaveChanges();
+                TempData["Info"] = $"User '{user.Username}' updated successfully.";
+                return RedirectToAction("UserManage");
+            }
+            return View(vm);
+        }
+
+        // ==========================================
+        // [POST: Admin/ToggleBlock] Block / unblock a MEMBER account
+        // ==========================================
+        [HttpPost]
+        public IActionResult ToggleBlock(int id)
+        {
+            var user = db.Users.Find(id);
+            if (user == null)
+            {
+                return NotFound();
+            }
+
+            // Only MEMBER accounts can be blocked — ADMIN accounts are protected
+            if (user.Role != "MEMBER")
+            {
+                TempData["Error"] = "Only member accounts can be blocked or unblocked.";
+                return RedirectToAction("UserManage");
+            }
+
+            user.IsBlocked = !user.IsBlocked;
+            db.SaveChanges();
+
+            TempData["Info"] = user.IsBlocked
+                ? $"Member '{user.Username}' has been blocked."
+                : $"Member '{user.Username}' has been unblocked.";
+
+            return RedirectToAction("UserManage");
+        }
+
+        // ==========================================
+        // [POST: Admin/DeleteUser] Delete a user
+        // ==========================================
+        [HttpPost]
+        public IActionResult DeleteUser(int id)
+        {
+            var user = db.Users.Find(id);
+            if (user == null)
+            {
+                return NotFound();
+            }
+
+            // Prevent an admin from accidentally deleting their own account
+            if (user.Username == User.Identity?.Name)
+            {
+                TempData["Error"] = "You cannot delete your own account.";
+                return RedirectToAction("UserManage");
+            }
+
+            if (db.Orders.Any(o => o.UserId == id))
+            {
+                TempData["Error"] = $"Cannot delete '{user.Username}' — they have existing orders. Block the account instead.";
+                return RedirectToAction("UserManage");
+            }
+
+            db.Users.Remove(user);
+            db.SaveChanges();
+            TempData["Info"] = $"User '{user.Username}' has been deleted.";
+            return RedirectToAction("UserManage");
+        }
+
+        // ==========================================
+        // [Report Module] — lives inside AdminController on purpose, so the
+        // URLs come out as /Admin/Report/... via attribute routing below,
+        // instead of needing a separate ReportController.
+        // ==========================================
+
+        // Landing page for the Reports section — links out to Daily / Monthly / Top-Selling
+        [Route("Admin/Report")]
+        public IActionResult Report()
+        {
+            return View();
+        }
+
+        private Dictionary<int, string> ProductNames()
+        {
+            return db.Products.ToDictionary(p => p.ProductId, p => p.ProductName);
+        }
+
+        // ---------- Daily Sales Report ----------
+        [Route("Admin/Report/Daily")]
+        public IActionResult Daily(DateTime? date)
+        {
+            DateTime selectedDate = (date ?? DateTime.Today).Date;
+
+            var orders = db.Orders
+                .Where(o => o.OrderDate.Date == selectedDate && o.OrderStatus != "CANCELLED")
+                .ToList();
+
+            var names = ProductNames();
+
+            var details = db.OrderDetails
+                .Where(d => orders.Select(o => o.OrderId).Contains(d.OrderId))
+                .ToList();
+
+            var vm = new DailyReportVM
+            {
+                Date = selectedDate,
+                TotalOrders = orders.Count,
+                TotalRevenue = orders.Sum(o => o.TotalAmount),
+                Items = details
+                    .GroupBy(d => d.ProductId)
+                    .Select(g => new ReportItemVM
+                    {
+                        ProductId = g.Key,
+                        ProductName = names.TryGetValue(g.Key, out var n) ? n : "Unknown",
+                        Quantity = g.Sum(x => x.Quantity),
+                        Revenue = g.Sum(x => x.Quantity * x.PriceAtOrder)
+                    })
+                    .OrderByDescending(x => x.Quantity)
+                    .ToList()
+            };
+            vm.AvgOrderValue = vm.TotalOrders > 0 ? vm.TotalRevenue / vm.TotalOrders : 0;
+
+            ViewBag.PrevDate = selectedDate.AddDays(-1);
+            ViewBag.NextDate = selectedDate.AddDays(1);
+            ViewBag.Today = DateTime.Today;
+            return View(vm);
+        }
+
+        [Route("Admin/Report/Daily/Export")]
+        public IActionResult ExportDailyPdf(DateTime? date)
+        {
+            DateTime selectedDate = (date ?? DateTime.Today).Date;
+
+            var orders = db.Orders
+                .Where(o => o.OrderDate.Date == selectedDate && o.OrderStatus != "CANCELLED")
+                .ToList();
+
+            var names = ProductNames();
+
+            var details = db.OrderDetails
+                .Where(d => orders.Select(o => o.OrderId).Contains(d.OrderId))
+                .ToList();
+
+            var totalOrders = orders.Count;
+            var totalRevenue = orders.Sum(o => o.TotalAmount);
+            var avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+
+            var items = details
+                .GroupBy(d => d.ProductId)
+                .Select(g => new ReportItemVM
+                {
+                    ProductId = g.Key,
+                    ProductName = names.TryGetValue(g.Key, out var n) ? n : "Unknown",
+                    Quantity = g.Sum(x => x.Quantity),
+                    Revenue = g.Sum(x => x.Quantity * x.PriceAtOrder)
+                })
+                .OrderByDescending(x => x.Quantity)
+                .ToList();
+
+            var dateStr = selectedDate.ToString("MMMM dd, yyyy");
+
+            var doc = Document.Create(container =>
+            {
+                container.Page(page =>
+                {
+                    page.Size(PageSizes.A4);
+                    page.MarginHorizontal(30);
+                    page.MarginVertical(30);
+
+                    page.Content().Column(col =>
+                    {
+                        col.Item().Text($"Daily Sales Report — {dateStr}")
+                            .FontSize(20).Bold().FontColor(Colors.Grey.Darken3);
+
+                        col.Item().PaddingVertical(5);
+
+                        col.Item().Row(row =>
+                        {
+                            row.RelativeItem().Background(Colors.Grey.Lighten3).Padding(10).Column(c =>
+                            {
+                                c.Item().Text("Total Revenue").FontSize(10).FontColor(Colors.Grey.Medium);
+                                c.Item().Text($"RM {totalRevenue:N2}").FontSize(16).Bold();
+                            });
+                            row.ConstantItem(10);
+                            row.RelativeItem().Background(Colors.Grey.Lighten3).Padding(10).Column(c =>
+                            {
+                                c.Item().Text("Total Orders").FontSize(10).FontColor(Colors.Grey.Medium);
+                                c.Item().Text($"{totalOrders}").FontSize(16).Bold();
+                            });
+                            row.ConstantItem(10);
+                            row.RelativeItem().Background(Colors.Grey.Lighten3).Padding(10).Column(c =>
+                            {
+                                c.Item().Text("Avg. Order Value").FontSize(10).FontColor(Colors.Grey.Medium);
+                                c.Item().Text($"RM {avgOrderValue:N2}").FontSize(16).Bold();
+                            });
+                        });
+
+                        col.Item().PaddingVertical(10);
+
+                        col.Item().Text($"Items Sold ({items.Count})").FontSize(14).Bold().FontColor(Colors.Grey.Darken3);
+                        col.Item().PaddingBottom(5);
+
+                        if (items.Count > 0)
+                        {
+                            col.Item().Table(table =>
+                            {
+                                table.ColumnsDefinition(columns =>
+                                {
+                                    columns.RelativeColumn(1);
+                                    columns.RelativeColumn(4);
+                                    columns.RelativeColumn(2);
+                                    columns.RelativeColumn(2);
+                                });
+
+                                table.Header(header =>
+                                {
+                                    header.Cell().Background(Colors.Grey.Darken3).Padding(6).Text("#").FontColor(Colors.White).Bold();
+                                    header.Cell().Background(Colors.Grey.Darken3).Padding(6).Text("Product").FontColor(Colors.White).Bold();
+                                    header.Cell().Background(Colors.Grey.Darken3).Padding(6).AlignCenter().Text("Qty").FontColor(Colors.White).Bold();
+                                    header.Cell().Background(Colors.Grey.Darken3).Padding(6).AlignRight().Text("Revenue").FontColor(Colors.White).Bold();
+                                });
+
+                                for (int i = 0; i < items.Count; i++)
+                                {
+                                    var item = items[i];
+                                    table.Cell().Padding(6).BorderBottom(1).BorderColor(Colors.Grey.Lighten1)
+                                        .Text($"{i + 1}");
+                                    table.Cell().Padding(6).BorderBottom(1).BorderColor(Colors.Grey.Lighten1)
+                                        .Text(item.ProductName);
+                                    table.Cell().Padding(6).BorderBottom(1).BorderColor(Colors.Grey.Lighten1)
+                                        .AlignCenter().Text($"{item.Quantity}");
+                                    table.Cell().Padding(6).BorderBottom(1).BorderColor(Colors.Grey.Lighten1)
+                                        .AlignRight().Text($"RM {item.Revenue:N2}");
+                                }
+                            });
+
+                            col.Item().Background(Colors.Grey.Darken3).Padding(6).Row(row =>
+                            {
+                                row.RelativeItem().Text("Total").FontColor(Colors.White).Bold();
+                                row.RelativeItem().AlignCenter().Text($"{items.Sum(x => x.Quantity)}").FontColor(Colors.White).Bold();
+                                row.RelativeItem().AlignRight().Text($"RM {items.Sum(x => x.Revenue):N2}").FontColor(Colors.White).Bold();
+                            });
+                        }
+                        else
+                        {
+                            col.Item().Text("No sales recorded for this day.").Italic().FontColor(Colors.Grey.Medium);
+                        }
+                    });
+                });
+            });
+
+            var pdfBytes = doc.GeneratePdf();
+            return File(pdfBytes, "application/pdf", $"DailyReport_{selectedDate:yyyy-MM-dd}.pdf");
+        }
+
+        // ---------- Monthly Sales Report ----------
+        [Route("Admin/Report/Monthly")]
+        public IActionResult Monthly(int? year, int? month)
+        {
+            int y = year ?? DateTime.Today.Year;
+            int m = month ?? DateTime.Today.Month;
+
+            var orders = db.Orders
+                .Where(o => o.OrderDate.Year == y && o.OrderDate.Month == m && o.OrderStatus != "CANCELLED")
+                .ToList();
+
+            var names = ProductNames();
+
+            var details = db.OrderDetails
+                .Where(d => orders.Select(o => o.OrderId).Contains(d.OrderId))
+                .ToList();
+
+            var vm = new MonthlyReportVM
+            {
+                Year = y,
+                Month = m,
+                MonthName = new DateTime(y, m, 1).ToString("MMMM yyyy"),
+                TotalOrders = orders.Count,
+                TotalRevenue = orders.Sum(o => o.TotalAmount),
+                DailySummaries = orders
+                    .GroupBy(o => o.OrderDate.Date)
+                    .Select(g => new DaySummaryVM
+                    {
+                        Day = g.Key,
+                        Orders = g.Count(),
+                        Revenue = g.Sum(o => o.TotalAmount)
+                    })
+                    .OrderBy(x => x.Day)
+                    .ToList(),
+                TopItems = details
+                    .GroupBy(d => d.ProductId)
+                    .Select(g => new ReportItemVM
+                    {
+                        ProductId = g.Key,
+                        ProductName = names.TryGetValue(g.Key, out var n) ? n : "Unknown",
+                        Quantity = g.Sum(x => x.Quantity),
+                        Revenue = g.Sum(x => x.Quantity * x.PriceAtOrder)
+                    })
+                    .OrderByDescending(x => x.Quantity)
+                    .Take(10)
+                    .ToList()
+            };
+
+            ViewBag.PrevMonth = new DateTime(y, m, 1).AddMonths(-1);
+            ViewBag.NextMonth = new DateTime(y, m, 1).AddMonths(1);
+            ViewBag.Today = DateTime.Today;
+            return View(vm);
+        }
+
+        [Route("Admin/Report/Monthly/Export")]
+        public IActionResult ExportMonthlyPdf(int? year, int? month)
+        {
+            int y = year ?? DateTime.Today.Year;
+            int m = month ?? DateTime.Today.Month;
+
+            var orders = db.Orders
+                .Where(o => o.OrderDate.Year == y && o.OrderDate.Month == m && o.OrderStatus != "CANCELLED")
+                .ToList();
+
+            var names = ProductNames();
+
+            var details = db.OrderDetails
+                .Where(d => orders.Select(o => o.OrderId).Contains(d.OrderId))
+                .ToList();
+
+            var monthName = new DateTime(y, m, 1).ToString("MMMM yyyy");
+            var totalOrders = orders.Count;
+            var totalRevenue = orders.Sum(o => o.TotalAmount);
+
+            var dailySummaries = orders
+                .GroupBy(o => o.OrderDate.Date)
+                .Select(g => new DaySummaryVM
+                {
+                    Day = g.Key,
+                    Orders = g.Count(),
+                    Revenue = g.Sum(o => o.TotalAmount)
+                })
+                .OrderBy(x => x.Day)
+                .ToList();
+
+            var topItems = details
+                .GroupBy(d => d.ProductId)
+                .Select(g => new ReportItemVM
+                {
+                    ProductId = g.Key,
+                    ProductName = names.TryGetValue(g.Key, out var n) ? n : "Unknown",
+                    Quantity = g.Sum(x => x.Quantity),
+                    Revenue = g.Sum(x => x.Quantity * x.PriceAtOrder)
+                })
+                .OrderByDescending(x => x.Quantity)
+                .Take(10)
+                .ToList();
+
+            var doc = Document.Create(container =>
+            {
+                container.Page(page =>
+                {
+                    page.Size(PageSizes.A4);
+                    page.MarginHorizontal(30);
+                    page.MarginVertical(30);
+
+                    page.Content().Column(col =>
+                    {
+                        col.Item().Text($"Monthly Sales Report — {monthName}")
+                            .FontSize(20).Bold().FontColor(Colors.Grey.Darken3);
+
+                        col.Item().PaddingVertical(5);
+
+                        col.Item().Row(row =>
+                        {
+                            row.RelativeItem().Background(Colors.Grey.Lighten3).Padding(10).Column(c =>
+                            {
+                                c.Item().Text("Total Revenue").FontSize(10).FontColor(Colors.Grey.Medium);
+                                c.Item().Text($"RM {totalRevenue:N2}").FontSize(16).Bold();
+                            });
+                            row.ConstantItem(10);
+                            row.RelativeItem().Background(Colors.Grey.Lighten3).Padding(10).Column(c =>
+                            {
+                                c.Item().Text("Total Orders").FontSize(10).FontColor(Colors.Grey.Medium);
+                                c.Item().Text($"{totalOrders}").FontSize(16).Bold();
+                            });
+                        });
+
+                        col.Item().PaddingVertical(10);
+
+                        col.Item().Text("Daily Breakdown").FontSize(14).Bold().FontColor(Colors.Grey.Darken3);
+                        col.Item().PaddingBottom(5);
+
+                        if (dailySummaries.Count > 0)
+                        {
+                            col.Item().Table(table =>
+                            {
+                                table.ColumnsDefinition(columns =>
+                                {
+                                    columns.RelativeColumn(3);
+                                    columns.RelativeColumn(1);
+                                    columns.RelativeColumn(2);
+                                });
+
+                                table.Header(header =>
+                                {
+                                    header.Cell().Background(Colors.Grey.Darken3).Padding(6).Text("Day").FontColor(Colors.White).Bold();
+                                    header.Cell().Background(Colors.Grey.Darken3).Padding(6).AlignCenter().Text("Orders").FontColor(Colors.White).Bold();
+                                    header.Cell().Background(Colors.Grey.Darken3).Padding(6).AlignRight().Text("Revenue").FontColor(Colors.White).Bold();
+                                });
+
+                                foreach (var d in dailySummaries)
+                                {
+                                    table.Cell().Padding(6).BorderBottom(1).BorderColor(Colors.Grey.Lighten1)
+                                        .Text(d.Day.ToString("dddd, MMM dd"));
+                                    table.Cell().Padding(6).BorderBottom(1).BorderColor(Colors.Grey.Lighten1)
+                                        .AlignCenter().Text($"{d.Orders}");
+                                    table.Cell().Padding(6).BorderBottom(1).BorderColor(Colors.Grey.Lighten1)
+                                        .AlignRight().Text($"RM {d.Revenue:N2}");
+                                }
+                            });
+                        }
+                        else
+                        {
+                            col.Item().PaddingBottom(10).Text("No sales recorded for this month.").Italic().FontColor(Colors.Grey.Medium);
+                        }
+
+                        col.Item().PaddingVertical(10);
+
+                        col.Item().Text("Top 10 Items").FontSize(14).Bold().FontColor(Colors.Grey.Darken3);
+                        col.Item().PaddingBottom(5);
+
+                        if (topItems.Count > 0)
+                        {
+                            col.Item().Table(table =>
+                            {
+                                table.ColumnsDefinition(columns =>
+                                {
+                                    columns.RelativeColumn(1);
+                                    columns.RelativeColumn(4);
+                                    columns.RelativeColumn(2);
+                                    columns.RelativeColumn(2);
+                                });
+
+                                table.Header(header =>
+                                {
+                                    header.Cell().Background(Colors.Grey.Darken3).Padding(6).Text("#").FontColor(Colors.White).Bold();
+                                    header.Cell().Background(Colors.Grey.Darken3).Padding(6).Text("Product").FontColor(Colors.White).Bold();
+                                    header.Cell().Background(Colors.Grey.Darken3).Padding(6).AlignCenter().Text("Qty").FontColor(Colors.White).Bold();
+                                    header.Cell().Background(Colors.Grey.Darken3).Padding(6).AlignRight().Text("Revenue").FontColor(Colors.White).Bold();
+                                });
+
+                                for (int i = 0; i < topItems.Count; i++)
+                                {
+                                    var item = topItems[i];
+                                    table.Cell().Padding(6).BorderBottom(1).BorderColor(Colors.Grey.Lighten1)
+                                        .Text($"{i + 1}");
+                                    table.Cell().Padding(6).BorderBottom(1).BorderColor(Colors.Grey.Lighten1)
+                                        .Text(item.ProductName);
+                                    table.Cell().Padding(6).BorderBottom(1).BorderColor(Colors.Grey.Lighten1)
+                                        .AlignCenter().Text($"{item.Quantity}");
+                                    table.Cell().Padding(6).BorderBottom(1).BorderColor(Colors.Grey.Lighten1)
+                                        .AlignRight().Text($"RM {item.Revenue:N2}");
+                                }
+                            });
+                        }
+                        else
+                        {
+                            col.Item().Text("No items sold this month.").Italic().FontColor(Colors.Grey.Medium);
+                        }
+                    });
+                });
+            });
+
+            var pdfBytes = doc.GeneratePdf();
+            return File(pdfBytes, "application/pdf", $"MonthlyReport_{y}_{m:D2}.pdf");
+        }
+
+        // ---------- Top-Selling Foods ----------
+        [Route("Admin/Report/TopSelling")]
+        public IActionResult TopSelling(DateTime? from, DateTime? to)
+        {
+            DateTime f = (from ?? new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1)).Date;
+            DateTime t = (to ?? DateTime.Today).Date;
+
+            var orders = db.Orders
+                .Where(o => o.OrderDate.Date >= f && o.OrderDate.Date <= t && o.OrderStatus != "CANCELLED")
+                .ToList();
+
+            var names = ProductNames();
+
+            var details = db.OrderDetails
+                .Where(d => orders.Select(o => o.OrderId).Contains(d.OrderId))
+                .ToList();
+
+            var vm = new TopSellingVM
+            {
+                From = f,
+                To = t,
+                TotalOrders = orders.Count,
+                TotalRevenue = orders.Sum(o => o.TotalAmount),
+                Items = details
+                    .GroupBy(d => d.ProductId)
+                    .Select(g => new ReportItemVM
+                    {
+                        ProductId = g.Key,
+                        ProductName = names.TryGetValue(g.Key, out var n) ? n : "Unknown",
+                        Quantity = g.Sum(x => x.Quantity),
+                        Revenue = g.Sum(x => x.Quantity * x.PriceAtOrder)
+                    })
+                    .OrderByDescending(x => x.Quantity)
+                    .ThenByDescending(x => x.Revenue)
+                    .ToList()
+            };
+
+            return View(vm);
+        }
+    }
+}

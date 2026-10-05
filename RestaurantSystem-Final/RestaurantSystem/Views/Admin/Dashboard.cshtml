@@ -1,0 +1,66 @@
+﻿@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Admin Dashboard";
+    ViewBag.ActiveMenu = "Dashboard";
+
+    decimal todayRevenue = ViewBag.TodayRevenue;
+    int activeOrders = ViewBag.ActiveOrders;
+    int occupiedCount = ViewBag.OccupiedCount;
+    int totalTables = ViewBag.TotalTables;
+    var tables = ViewBag.Tables as List<RestaurantSystem.Models.Table>;
+}
+
+<div class="admin-page-header">
+    <div>
+        <h2>Admin Control Panel</h2>
+        <span class="badge bg-danger px-3 py-2 rounded-pill fw-bold">System Online</span>
+    </div>
+</div>
+
+<div class="row mb-5">
+    <div class="col-md-4 mb-3">
+        <div class="card border-0 shadow-sm rounded-4 p-4 text-white bg-dark">
+            <h6 class="text-uppercase opacity-75">Today's Revenue</h6>
+            <h2 class="display-6 fw-bold">RM @todayRevenue.ToString("F2")</h2>
+            <small class="opacity-75">Non-cancelled orders placed today</small>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="card border-0 shadow-sm rounded-4 p-4 bg-light text-dark">
+            <h6 class="text-uppercase text-muted">Active Orders</h6>
+            <h2 class="display-6 fw-bold text-orange">@activeOrders</h2>
+            <small class="text-muted">Currently pending</small>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="card border-0 shadow-sm rounded-4 p-4 bg-light text-dark">
+            <h6 class="text-uppercase text-muted">Occupied Tables</h6>
+            <h2 class="display-6 fw-bold text-success">@occupiedCount / @totalTables</h2>
+            <small class="text-muted">Real-time dine-in tracking</small>
+        </div>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm rounded-4 p-4">
+    <h4 class="fw-bold mb-4">Live Table Status Overview</h4>
+    <div class="row">
+        @if (tables != null && tables.Any())
+        {
+            foreach (var table in tables)
+            {
+                <div class="col-md-2 col-6 mb-3 text-center">
+                    <div class="card border-0 rounded-4 p-3 shadow-sm @(table.IsOccupied ? "bg-danger text-white" : "bg-light text-dark")">
+                        <h6 class="fw-bold mb-1">@table.TableName</h6>
+                        <span class="small badge @(table.IsOccupied ? "bg-white text-danger" : "bg-success text-white") rounded-pill">
+                            @(table.IsOccupied ? "Occupied" : "Available")
+                        </span>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <p class="text-muted">No tables found in database.</p>
+        }
+    </div>
+</div>

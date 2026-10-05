@@ -1,0 +1,45 @@
+@model List<Category>
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Category Management";
+    ViewBag.ActiveMenu = "Categories";
+}
+
+<div class="admin-page-header">
+    <div>
+        <h2>Category Management</h2>
+        <span class="text-muted small">Organize menu items into categories</span>
+    </div>
+    <a asp-action="CreateCategory" class="btn btn-orange rounded-pill px-4 fw-bold">
+        <i class="fa-solid fa-plus me-1"></i> Add Category
+    </a>
+</div>
+
+<div class="card border-0 shadow-sm rounded-4 overflow-hidden admin-table-card">
+    <table class="table table-hover align-middle mb-0">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Category Name</th>
+                <th class="text-end">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td class="fw-bold">@item.CategoryId</td>
+                    <td class="fw-semibold">@item.CategoryName</td>
+                    <td class="text-end">
+                        <div class="table-actions">
+                            <a asp-action="EditCategory" asp-route-id="@item.CategoryId" class="btn btn-sm btn-secondary rounded-pill px-2 py-1 fw-bold">Edit</a>
+                            <a asp-action="DeleteCategory" asp-route-id="@item.CategoryId" class="btn btn-sm btn-danger rounded-pill px-2 py-1 fw-bold">Delete</a>
+                        </div>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<a asp-action="Dashboard" class="btn btn-outline-admin rounded-pill mt-3">Back to Dashboard</a>

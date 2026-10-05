@@ -1,0 +1,57 @@
+﻿@model RestaurantSystem.Models.User
+@{
+    ViewData["Title"] = "My Profile";
+    string avatarSrc = string.IsNullOrEmpty(Model.ProfilePhotoUrl) ? "/images/avatars/default-avatar.png" : Model.ProfilePhotoUrl;
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm rounded-4 p-4 text-center">
+                <h3 class="fw-bold mb-4">My Account Profile</h3>
+
+                @if (TempData["Info"] != null)
+                {
+                    <div class="alert alert-success alert-dismissible fade show small" role="alert">
+                        <i class="fa-solid fa-circle-check me-1"></i> @TempData["Info"]
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                }
+
+                <div class="mb-3">
+                    <img src="@avatarSrc" class="rounded-circle img-thumbnail shadow-sm" style="width: 120px; height: 120px; object-fit: cover;" alt="Avatar">
+                </div>
+
+                <form asp-action="UploadPhoto" asp-controller="Account" method="post" enctype="multipart/form-data" class="mb-4">
+                    <div class="d-flex justify-content-center gap-2">
+                        <input type="file" name="photo" accept=".jpg,.jpeg,.png" class="form-control form-control-sm" style="max-width: 240px;" />
+                        <button type="submit" class="btn btn-sm btn-outline-secondary">
+                            <i class="fa-solid fa-upload me-1"></i>Upload
+                        </button>
+                    </div>
+                    <p class="text-muted small mt-1 mb-0">JPG or PNG, max 2MB</p>
+                </form>
+
+                <h4 class="fw-bold">@Model.FullName</h4>
+                <p class="text-muted mb-4">Account Role: <span class="badge bg-warning text-dark">@((Model.Role == "ADMIN") ? "Administrator" : "Valued Member")</span></p>
+                <hr />
+                <div class="text-start mt-3">
+                    <p class="mb-2"><strong>Username:</strong> @Model.Username</p>
+                    <p class="mb-2"><strong>Email:</strong> @Model.Email</p>
+                    <p class="mb-2"><strong>Phone:</strong> @(string.IsNullOrEmpty(Model.PhoneNumber) ? "—" : Model.PhoneNumber)</p>
+                    <p class="mb-2"><strong>Address:</strong> @(string.IsNullOrEmpty(Model.Address) ? "—" : Model.Address)</p>
+                    <p class="mb-2"><strong>Status:</strong> Active</p>
+                </div>
+
+                <div class="d-grid gap-2 mt-4">
+                    <a asp-action="EditProfile" asp-controller="Account" class="btn btn-outline-secondary fw-bold">
+                        <i class="fa-solid fa-pen me-2"></i>Edit Profile
+                    </a>
+                    <a asp-action="ResetPassword" asp-controller="Account" class="btn btn-orange fw-bold">
+                        <i class="fa-solid fa-key me-2"></i>Change Password
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

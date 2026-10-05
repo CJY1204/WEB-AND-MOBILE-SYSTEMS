@@ -1,0 +1,55 @@
+﻿@{
+    string activeMenu = ViewBag.ActiveMenu as string ?? "";
+}
+
+<aside class="admin-sidebar">
+    <div class="admin-sidebar-brand">
+        BITE <span>Admin</span>
+    </div>
+    <nav class="d-flex flex-column gap-1 mt-3">
+        <a class="admin-nav-link @(activeMenu == "Dashboard" ? "active" : "")"
+           asp-controller="Admin" asp-action="Dashboard">
+            <i class="fa-solid fa-gauge-high"></i> Dashboard
+        </a>
+        <a class="admin-nav-link @(activeMenu == "UserManage" ? "active" : "")"
+           asp-controller="Admin" asp-action="UserManage">
+            <i class="fa-solid fa-users-gear"></i> User Manage
+        </a>
+        <a class="admin-nav-link @(activeMenu == "Orders" ? "active" : "")"
+           asp-controller="Admin" asp-action="Orders">
+            <i class="fa-solid fa-receipt"></i> Orders
+        </a>
+        <a class="admin-nav-link @(activeMenu == "Categories" ? "active" : "")"
+           asp-controller="Admin" asp-action="Categories">
+            <i class="fa-solid fa-tags"></i> Categories
+        </a>
+        <a class="admin-nav-link @(activeMenu == "Products" ? "active" : "")"
+           asp-controller="Admin" asp-action="Products">
+            <i class="fa-solid fa-utensils"></i> Products
+        </a>
+        <div>
+            <a class="admin-nav-link admin-nav-toggle @(activeMenu.StartsWith("Report") ? "active" : "")"
+               data-bs-toggle="collapse" href="#reportsSubmenu" role="button"
+               aria-expanded="@(activeMenu.StartsWith("Report") ? "true" : "false")">
+                <i class="fa-solid fa-chart-bar"></i> Reports
+                <i class="fa-solid fa-chevron-down ms-auto submenu-arrow"></i>
+            </a>
+            <div class="collapse @(activeMenu.StartsWith("Report") ? "show" : "")" id="reportsSubmenu">
+                <div class="admin-nav-submenu">
+                    <a class="admin-nav-link @(activeMenu == "ReportDaily" ? "active" : "")"
+                       asp-controller="Admin" asp-action="Daily">
+                        <i class="fa-solid fa-calendar-day"></i> Daily
+                    </a>
+                    <a class="admin-nav-link @(activeMenu == "ReportMonthly" ? "active" : "")"
+                       asp-controller="Admin" asp-action="Monthly">
+                        <i class="fa-solid fa-calendar-days"></i> Monthly
+                    </a>
+                    <a class="admin-nav-link @(activeMenu == "ReportTopSelling" ? "active" : "")"
+                       asp-controller="Admin" asp-action="TopSelling">
+                        <i class="fa-solid fa-fire"></i> Top Selling
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+</aside>

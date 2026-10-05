@@ -1,0 +1,205 @@
+﻿/* ==========================================================
+   Dark Mode Theme
+   Scoped under html.dark-mode so it never affects the default
+   light theme, and doesn't touch any existing site.css rules.
+   ========================================================== */
+
+html.dark-mode {
+    --dm-bg: #121212;
+    --dm-surface: #1e1e1e;
+    --dm-surface-alt: #262626;
+    --dm-border: #333333;
+    --dm-text: #e8e8e8;
+    --dm-text-muted: #a0a0a0;
+    --dm-orange: #ff9f43;
+}
+
+    /* Smooth transition when toggling */
+    html.dark-mode,
+    html.dark-mode body {
+        background-color: var(--dm-bg) !important;
+        color: var(--dm-text) !important;
+        transition: background-color 0.2s ease, color 0.2s ease;
+    }
+
+        /* Cards */
+        html.dark-mode .card {
+            background-color: var(--dm-surface) !important;
+            color: var(--dm-text) !important;
+            border-color: var(--dm-border) !important;
+        }
+
+        html.dark-mode .card-header {
+            background-color: var(--dm-surface-alt) !important;
+            border-color: var(--dm-border) !important;
+            color: var(--dm-text) !important;
+        }
+
+        /* Text utility overrides */
+        html.dark-mode .text-dark,
+        html.dark-mode .text-secondary {
+            color: var(--dm-text) !important;
+        }
+
+        html.dark-mode .text-muted {
+            color: var(--dm-text-muted) !important;
+        }
+
+        /* Tables */
+        html.dark-mode .table {
+            color: var(--dm-text);
+            border-color: var(--dm-border);
+        }
+
+            html.dark-mode .table > :not(caption) > * > * {
+                background-color: var(--dm-surface) !important;
+                color: var(--dm-text) !important;
+                border-color: var(--dm-border) !important;
+            }
+
+        html.dark-mode .table-light,
+        html.dark-mode .table-light > * {
+            background-color: var(--dm-surface-alt) !important;
+            color: var(--dm-text) !important;
+        }
+
+        html.dark-mode .table-hover > tbody > tr:hover > * {
+            background-color: var(--dm-surface-alt) !important;
+        }
+
+        /* Forms */
+        html.dark-mode .form-control,
+        html.dark-mode .form-select {
+            background-color: var(--dm-surface-alt) !important;
+            color: var(--dm-text) !important;
+            border-color: var(--dm-border) !important;
+        }
+
+            html.dark-mode .form-control::placeholder {
+                color: var(--dm-text-muted) !important;
+            }
+
+            html.dark-mode .form-control:focus,
+            html.dark-mode .form-select:focus {
+                background-color: var(--dm-surface-alt) !important;
+                color: var(--dm-text) !important;
+                border-color: var(--dm-orange) !important;
+                box-shadow: 0 0 0 0.25rem rgba(255, 159, 67, 0.25) !important;
+            }
+
+        html.dark-mode .input-group-text {
+            background-color: var(--dm-surface-alt) !important;
+            color: var(--dm-text) !important;
+            border-color: var(--dm-border) !important;
+        }
+
+        /* Dropdowns */
+        html.dark-mode .dropdown-menu {
+            background-color: var(--dm-surface) !important;
+            border-color: var(--dm-border) !important;
+        }
+
+        html.dark-mode .dropdown-item {
+            color: var(--dm-text) !important;
+        }
+
+            html.dark-mode .dropdown-item:hover,
+            html.dark-mode .dropdown-item:focus {
+                background-color: var(--dm-surface-alt) !important;
+                color: var(--dm-orange) !important;
+            }
+
+        html.dark-mode .dropdown-divider {
+            border-color: var(--dm-border) !important;
+        }
+
+        /* Alerts */
+        html.dark-mode .alert-success {
+            background-color: rgba(25, 135, 84, 0.2) !important;
+            color: #75dda3 !important;
+            border-color: rgba(25, 135, 84, 0.4) !important;
+        }
+
+        html.dark-mode .alert-danger {
+            background-color: rgba(220, 53, 69, 0.2) !important;
+            color: #f5a3ab !important;
+            border-color: rgba(220, 53, 69, 0.4) !important;
+        }
+
+        /* Buttons that assume a light background */
+        html.dark-mode .btn-outline-secondary {
+            color: var(--dm-text) !important;
+            border-color: var(--dm-border) !important;
+        }
+
+            html.dark-mode .btn-outline-secondary:hover {
+                background-color: var(--dm-surface-alt) !important;
+                color: var(--dm-text) !important;
+            }
+
+        html.dark-mode .btn-light {
+            background-color: var(--dm-surface-alt) !important;
+            color: var(--dm-text) !important;
+            border-color: var(--dm-border) !important;
+        }
+
+        /* Horizontal rules */
+        html.dark-mode hr {
+            border-color: var(--dm-border) !important;
+            opacity: 1;
+        }
+
+        /* Badges that default to light backgrounds */
+        html.dark-mode .bg-light {
+            background-color: var(--dm-surface-alt) !important;
+            color: var(--dm-text) !important;
+        }
+
+        /* Nav pills used in the Menu sidebar */
+        html.dark-mode .nav-pills .nav-link {
+            color: var(--dm-text) !important;
+        }
+
+            html.dark-mode .nav-pills .nav-link:not(.active):hover {
+                background-color: var(--dm-surface-alt) !important;
+            }
+
+        /* Product / category badges keep their own colors on purpose (bg-warning, bg-danger, etc.) */
+
+        /* Table status cards (Tables.cshtml) — must win over the generic .card rule above,
+   so Available / Occupied stay visually distinct instead of both turning plain grey.
+   Two classes = higher specificity than the single ".card" selector, so this wins
+   regardless of stylesheet load order. */
+        html.dark-mode .table-card.status-available {
+            background-color: rgba(25, 135, 84, 0.18) !important;
+            border: 1px solid rgba(25, 135, 84, 0.5) !important;
+            color: var(--dm-text) !important;
+        }
+
+        html.dark-mode .table-card.status-occupied {
+            background-color: rgba(220, 53, 69, 0.18) !important;
+            border: 1px solid rgba(220, 53, 69, 0.5) !important;
+            color: var(--dm-text) !important;
+        }
+
+/* Theme toggle button in the navbar */
+.theme-toggle-btn {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: #ffffff;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s ease, transform 0.15s ease;
+}
+
+    .theme-toggle-btn:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .theme-toggle-btn:active {
+        transform: scale(0.92);
+    }

@@ -1,0 +1,38 @@
+﻿/* ==========================================================================
+   TABLES DASHBOARD STYLES (tables.css)
+   ========================================================================== */
+
+/* Base style for each table card */
+.table-card {
+    transition: all 0.4s ease;
+    border: 2px solid transparent !important;
+}
+
+    /* Subtle zoom effect on table hover */
+    .table-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+    }
+
+/* Green available status */
+.status-available {
+    background-color: #d4edda !important;
+    color: #155724 !important;
+    border-color: #c3e6cb !important;
+}
+
+/* Red occupied status */
+.status-occupied {
+    background-color: #f8d7da !important;
+    color: #721c24 !important;
+    border-color: #f5c6cb !important;
+}
+
+/* Countdown text badge */
+.timer-badge {
+    font-size: 0.75rem;
+    background: rgba(0, 0, 0, 0.1);
+    padding: 2px 8px;
+    border-radius: 10px;
+    display: inline-block;
+}

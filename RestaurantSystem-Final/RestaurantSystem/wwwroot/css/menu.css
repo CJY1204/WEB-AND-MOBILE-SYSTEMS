@@ -1,0 +1,20 @@
+﻿/* ==========================================================================
+   MENU PAGE STYLES (menu.css)
+   ========================================================================== */
+
+/* Left sidebar sticky scroll effect */
+.sticky-sidebar {
+    top: 20px;
+    z-index: 10;
+}
+
+/* Product card badge z-index */
+.product-badge {
+    z-index: 5;
+}
+
+/* Product card image uniform crop */
+.product-card-img {
+    height: 180px;
+    object-fit: cover;
+}

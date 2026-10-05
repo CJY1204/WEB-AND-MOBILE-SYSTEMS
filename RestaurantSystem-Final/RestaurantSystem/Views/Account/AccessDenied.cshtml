@@ -1,0 +1,39 @@
+﻿@{
+    ViewData["Title"] = "Access Denied";
+}
+
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 text-center">
+            <div class="card border-0 shadow-sm p-5">
+                <div class="mb-4">
+                    <i class="fa-solid fa-lock text-danger" style="font-size: 4rem;"></i>
+                </div>
+                <h2 class="fw-bold mb-3">Access Denied</h2>
+                <p class="text-muted mb-4">
+                    Sorry, you don't have permission to view this page.
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <text>Your current account role doesn't have access to this area.</text>
+                    }
+                    else
+                    {
+                        <text>Please log in with an account that has access.</text>
+                    }
+                </p>
+
+                <div class="d-flex justify-content-center gap-3">
+                    <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary rounded-pill px-4">
+                        <i class="fa-solid fa-house me-1"></i> Back to Home
+                    </a>
+                    @if (User.Identity?.IsAuthenticated != true)
+                    {
+                        <a asp-controller="Account" asp-action="Login" class="btn btn-orange rounded-pill px-4">
+                            <i class="fa-solid fa-right-to-bracket me-1"></i> Sign In
+                        </a>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,65 @@
+﻿@model RestaurantSystem.Models.ViewModels.RegisterVM
+@{
+    ViewData["Title"] = "Register Member Account";
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card shadow border-0 rounded-4 p-4">
+                <div class="card-body">
+                    <h2 class="fw-bold text-center mb-3">Create Account</h2>
+                    <p class="text-muted text-center small mb-4">Register as a member to start ordering your favorite dishes!</p>
+
+                    <div asp-validation-summary="ModelOnly" class="text-danger small mb-3"></div>
+
+                    <form asp-action="Register" method="post">
+
+                        <div class="mb-3">
+                            <label asp-for="Username" class="form-label fw-semibold">Username</label>
+                            <input asp-for="Username" class="form-control rounded-pill" placeholder="Enter username" required />
+                            <span asp-validation-for="Username" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Email" class="form-label fw-semibold">Email Address</label>
+                            <input asp-for="Email" class="form-control rounded-pill" placeholder="example@email.com" required />
+                            <span asp-validation-for="Email" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="FullName" class="form-label fw-semibold">Full Name</label>
+                            <input asp-for="FullName" class="form-control rounded-pill" placeholder="Enter your full name" required />
+                            <span asp-validation-for="FullName" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="PhoneNumber" class="form-label fw-semibold">Phone Number</label>
+                            <input asp-for="PhoneNumber" class="form-control rounded-pill" placeholder="e.g. +60123456789" />
+                            <span asp-validation-for="PhoneNumber" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Password" class="form-label fw-semibold">Password</label>
+                            <input asp-for="Password" class="form-control rounded-pill" placeholder="At least 6 characters" required />
+                            <span asp-validation-for="Password" class="text-danger small"></span>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100 rounded-pill py-2 fw-bold mt-3">
+                            Register
+                        </button>
+                    </form>
+
+                    <div class="text-center mt-4">
+                        <span class="text-muted small">Already have an account? </span>
+                        <a asp-action="Login" class="text-decoration-none small fw-bold">Login Here</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -1,0 +1,96 @@
+@model RestaurantSystem.Models.ViewModels.OrderSummaryVM
+@{
+    ViewData["Title"] = $"Order #{Model.OrderId}";
+
+    (string cls, string label) StatusBadge(string status) => status switch
+    {
+        "PENDING" => ("bg-warning text-dark", "Pending"),
+        "COMPLETED" => ("bg-success", "Completed"),
+        "CANCELLED" => ("bg-secondary", "Cancelled"),
+        _ => ("bg-light text-dark", status)
+    };
+    var (badgeCls, badgeLabel) = StatusBadge(Model.Status);
+}
+
+<div class="container my-5">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <h2 class="mb-0"><i class="fa-solid fa-receipt me-2"></i>Order #@Model.OrderId</h2>
+        <a asp-action="History" class="btn btn-outline-secondary">
+            <i class="fa-solid fa-arrow-left me-2"></i>Back to My Orders
+        </a>
+    </div>
+
+    @if (TempData["Info"] != null)
+    {
+        <div class="alert alert-info alert-dismissible fade show" role="alert">
+            <i class="fa-solid fa-circle-info me-2"></i>@TempData["Info"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <span class="text-muted">Placed on @Model.OrderDate.ToString("dd MMM yyyy, HH:mm")</span>
+            <span class="badge @badgeCls px-3 py-2 rounded-pill">@badgeLabel</span>
+        </div>
+        <div class="card-body p-4">
+            <div class="row mb-4">
+                <div class="col-sm-4"><span class="text-muted">Dining Option</span></div>
+                <div class="col-sm-8 fw-bold">
+                    @(Model.DiningOption == "DineIn" ? $"Dine-in · {Model.TableName}" : "Takeaway")
+                </div>
+                @if (Model.DiningOption == "Takeaway" && !string.IsNullOrEmpty(Model.DeliveryAddress))
+                {
+                    <div class="col-sm-4"><span class="text-muted">Address</span></div>
+                    <div class="col-sm-8 fw-bold">@Model.DeliveryAddress</div>
+                }
+                <div class="col-sm-4"><span class="text-muted">Payment Method</span></div>
+                <div class="col-sm-8 fw-bold">@Model.PaymentMethod</div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Dish</th>
+                            <th class="text-center">Qty</th>
+                            <th class="text-end">Unit Price</th>
+                            <th class="text-end">Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model.Items)
+                        {
+                            <tr>
+                                <td>@item.ProductName</td>
+                                <td class="text-center">@item.Quantity</td>
+                                <td class="text-end">RM @item.UnitPrice.ToString("F2")</td>
+                                <td class="text-end">RM @item.SubTotal.ToString("F2")</td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot>
+                        <tr class="table-light">
+                            <td class="fw-bold" colspan="3">Grand Total</td>
+                            <td class="text-end fw-bold text-success fs-5">RM @Model.TotalAmount.ToString("F2")</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <div class="d-flex gap-2 flex-wrap">
+                <a asp-action="DownloadReceipt" asp-route-id="@Model.OrderId" class="btn btn-outline-success">
+                    <i class="fa-solid fa-file-pdf me-2"></i>Download Receipt
+                </a>
+                @if (Model.CanCancel)
+                {
+                    <form asp-action="Cancel" asp-route-id="@Model.OrderId" method="post" onsubmit="return confirm('Are you sure you want to cancel this order?');">
+                        <button type="submit" class="btn btn-outline-danger">
+                            <i class="fa-solid fa-ban me-2"></i>Cancel This Order
+                        </button>
+                    </form>
+                }
+            </div>
+        </div>
+    </div>
+</div>

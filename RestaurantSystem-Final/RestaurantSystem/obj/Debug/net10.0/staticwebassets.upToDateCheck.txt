@@ -1,0 +1,152 @@
+wwwroot\css\admin.css
+wwwroot\css\dark-mode.css
+wwwroot\css\index.css
+wwwroot\css\menu.css
+wwwroot\css\site.css
+wwwroot\css\tables.css
+wwwroot\favicon.ico
+wwwroot\images\americano.jpg
+wwwroot\images\avatars\default-avatar.png
+wwwroot\images\avatars\user_4.png
+wwwroot\images\burger.jpg
+wwwroot\images\cheesecake.jpg
+wwwroot\images\friedrice.jpg
+wwwroot\images\fries.jpg
+wwwroot\images\garlicbread.jpg
+wwwroot\images\lavacake.jpg
+wwwroot\images\matchaicecream.jpg
+wwwroot\images\matchalatte.jpg
+wwwroot\images\milktea.jpg
+wwwroot\images\orangejuice.jpg
+wwwroot\images\pasta.jpg
+wwwroot\images\restaurant-bg.jpg
+wwwroot\images\steak.jpg
+wwwroot\images\wings.jpg
+wwwroot\js\site.js
+wwwroot\lib\bootstrap\dist\css\bootstrap-grid.css
+wwwroot\lib\bootstrap\dist\css\bootstrap-grid.css.map
+wwwroot\lib\bootstrap\dist\css\bootstrap-grid.min.css
+wwwroot\lib\bootstrap\dist\css\bootstrap-grid.min.css.map
+wwwroot\lib\bootstrap\dist\css\bootstrap-grid.rtl.css
+wwwroot\lib\bootstrap\dist\css\bootstrap-grid.rtl.css.map
+wwwroot\lib\bootstrap\dist\css\bootstrap-grid.rtl.min.css
+wwwroot\lib\bootstrap\dist\css\bootstrap-grid.rtl.min.css.map
+wwwroot\lib\bootstrap\dist\css\bootstrap-reboot.css
+wwwroot\lib\bootstrap\dist\css\bootstrap-reboot.css.map
+wwwroot\lib\bootstrap\dist\css\bootstrap-reboot.min.css
+wwwroot\lib\bootstrap\dist\css\bootstrap-reboot.min.css.map
+wwwroot\lib\bootstrap\dist\css\bootstrap-reboot.rtl.css
+wwwroot\lib\bootstrap\dist\css\bootstrap-reboot.rtl.css.map
+wwwroot\lib\bootstrap\dist\css\bootstrap-reboot.rtl.min.css
+wwwroot\lib\bootstrap\dist\css\bootstrap-reboot.rtl.min.css.map
+wwwroot\lib\bootstrap\dist\css\bootstrap-utilities.css
+wwwroot\lib\bootstrap\dist\css\bootstrap-utilities.css.map
+wwwroot\lib\bootstrap\dist\css\bootstrap-utilities.min.css
+wwwroot\lib\bootstrap\dist\css\bootstrap-utilities.min.css.map
+wwwroot\lib\bootstrap\dist\css\bootstrap-utilities.rtl.css
+wwwroot\lib\bootstrap\dist\css\bootstrap-utilities.rtl.css.map
+wwwroot\lib\bootstrap\dist\css\bootstrap-utilities.rtl.min.css
+wwwroot\lib\bootstrap\dist\css\bootstrap-utilities.rtl.min.css.map
+wwwroot\lib\bootstrap\dist\css\bootstrap.css
+wwwroot\lib\bootstrap\dist\css\bootstrap.css.map
+wwwroot\lib\bootstrap\dist\css\bootstrap.min.css
+wwwroot\lib\bootstrap\dist\css\bootstrap.min.css.map
+wwwroot\lib\bootstrap\dist\css\bootstrap.rtl.css
+wwwroot\lib\bootstrap\dist\css\bootstrap.rtl.css.map
+wwwroot\lib\bootstrap\dist\css\bootstrap.rtl.min.css
+wwwroot\lib\bootstrap\dist\css\bootstrap.rtl.min.css.map
+wwwroot\lib\bootstrap\dist\js\bootstrap.bundle.js
+wwwroot\lib\bootstrap\dist\js\bootstrap.bundle.js.map
+wwwroot\lib\bootstrap\dist\js\bootstrap.bundle.min.js
+wwwroot\lib\bootstrap\dist\js\bootstrap.bundle.min.js.map
+wwwroot\lib\bootstrap\dist\js\bootstrap.esm.js
+wwwroot\lib\bootstrap\dist\js\bootstrap.esm.js.map
+wwwroot\lib\bootstrap\dist\js\bootstrap.esm.min.js
+wwwroot\lib\bootstrap\dist\js\bootstrap.esm.min.js.map
+wwwroot\lib\bootstrap\dist\js\bootstrap.js
+wwwroot\lib\bootstrap\dist\js\bootstrap.js.map
+wwwroot\lib\bootstrap\dist\js\bootstrap.min.js
+wwwroot\lib\bootstrap\dist\js\bootstrap.min.js.map
+wwwroot\lib\bootstrap\LICENSE
+wwwroot\lib\jquery-validation-unobtrusive\dist\jquery.validate.unobtrusive.js
+wwwroot\lib\jquery-validation-unobtrusive\dist\jquery.validate.unobtrusive.min.js
+wwwroot\lib\jquery-validation-unobtrusive\LICENSE.txt
+wwwroot\lib\jquery-validation\dist\additional-methods.js
+wwwroot\lib\jquery-validation\dist\additional-methods.min.js
+wwwroot\lib\jquery-validation\dist\jquery.validate.js
+wwwroot\lib\jquery-validation\dist\jquery.validate.min.js
+wwwroot\lib\jquery-validation\LICENSE.md
+wwwroot\lib\jquery\dist\jquery.js
+wwwroot\lib\jquery\dist\jquery.min.js
+wwwroot\lib\jquery\dist\jquery.min.map
+wwwroot\lib\jquery\dist\jquery.slim.js
+wwwroot\lib\jquery\dist\jquery.slim.min.js
+wwwroot\lib\jquery\dist\jquery.slim.min.map
+wwwroot\lib\jquery\LICENSE.txt
+C:\Users\Jun Yu\Documents\RestaurantSystem-Final\RestaurantSystem-Final\RestaurantSystem\wwwroot\css\admin.css
+C:\Users\Jun Yu\Documents\RestaurantSystem-Final\RestaurantSystem-Final\RestaurantSystem\wwwroot\css\dark-mode.css
+C:\Users\Jun Yu\Documents\RestaurantSystem-Final\RestaurantSystem-Final\RestaurantSystem\wwwroot\css\index.css
+C:\Users\Jun Yu\Documents\RestaurantSystem-Final\RestaurantSystem-Final\RestaurantSystem\wwwroot\css\menu.css
+C:\Users\Jun Yu\Documents\RestaurantSystem-Final\RestaurantSystem-Final\RestaurantSystem\wwwroot\css\site.css
+C:\Users\Jun Yu\Documents\RestaurantSystem-Final\RestaurantSystem-Final\RestaurantSystem\wwwroot\css\tables.css
+C:\Users\Jun Yu\Documents\RestaurantSystem-Final\RestaurantSystem-Final\RestaurantSystem\wwwroot\favicon.ico
+C:\Users\Jun Yu\Documents\RestaurantSystem-Final\RestaurantSystem-Final\RestaurantSystem\wwwroot\js\site.js
+C:\Users\Jun Yu\Documents\RestaurantSystem-Final\RestaurantSystem-Final\RestaurantSystem\wwwroot\lib\bootstrap\dist\css\bootstrap-grid.css
+C:\Users\Jun Yu\Documents\RestaurantSystem-Final\RestaurantSystem-Final\RestaurantSystem\wwwroot\lib\bootstrap\dist\css\bootstrap-grid.css.map
+C:\Users\Jun Yu\Documents\RestaurantSystem-Final\RestaurantSystem-Final\RestaurantSystem\wwwroot\lib\bootstrap\dist\css\bootstrap-grid.min.css
+C:\Users\Jun Yu\Documents\RestaurantSystem-Final\RestaurantSystem-Final\RestaurantSystem\wwwroot\lib\bootstrap\dist\css\bootstrap-grid.min.css.map
+C:\Users\Jun Yu\Documents\RestaurantSystem-Final\RestaurantSystem-Final\RestaurantSystem\wwwroot\lib\bootstrap\dist\css\bootstrap-grid.rtl.css
+C:\Users\Jun Yu\Documents\RestaurantSystem-Final\RestaurantSystem-Final\RestaurantSystem\wwwroot\lib\bootstrap\dist\css\bootstrap-grid.rtl.css.map
+C:\Users\Jun Yu\Documents\RestaurantSystem-Final\RestaurantSystem-Final\RestaurantSystem\wwwroot\lib\bootstrap\dist\css\bootstrap-grid.rtl.min.css
+C:\Users\Jun Yu\Documents\RestaurantSystem-Final\RestaurantSystem-Final\RestaurantSystem\wwwroot\lib\bootstrap\dist\css\bootstrap-grid.rtl.min.css.map
+C:\Users\Jun Yu\Documents\RestaurantSystem-Final\RestaurantSystem-Final\RestaurantSystem\wwwroot\lib\bootstrap\dist\css\bootstrap-reboot.css
+C:\Users\Jun Yu\Documents\RestaurantSystem-Final\RestaurantSystem-Final\RestaurantSystem\wwwroot\lib\bootstrap\dist\css\bootstrap-reboot.css.map
+C:\Users\Jun Yu\Documents\RestaurantSystem-Final\RestaurantSystem-Final\RestaurantSystem\wwwroot\lib\bootstrap\dist\css\bootstrap-reboot.min.css
+C:\Users\Jun Yu\Documents\RestaurantSystem-Final\RestaurantSystem-Final\RestaurantSystem\wwwroot\lib\bootstrap\dist\css\bootstrap-reboot.min.css.map
+C:\Users\Jun Yu\Documents\RestaurantSystem-Final\RestaurantSystem-Final\RestaurantSystem\wwwroot\lib\bootstrap\dist\css\bootstrap-reboot.rtl.css
+C:\Users\Jun Yu\Documents\RestaurantSystem-Final\RestaurantSystem-Final\RestaurantSystem\wwwroot\lib\bootstrap\dist\css\bootstrap-reboot.rtl.css.map
+C:\Users\Jun Yu\Documents\RestaurantSystem-Final\RestaurantSystem-Final\RestaurantSystem\wwwroot\lib\bootstrap\dist\css\bootstrap-reboot.rtl.min.css
+C:\Users\Jun Yu\Documents\RestaurantSystem-Final\RestaurantSystem-Final\RestaurantSystem\wwwroot\lib\bootstrap\dist\css\bootstrap-reboot.rtl.min.css.map
+C:\Users\Jun Yu\Documents\RestaurantSystem-Final\RestaurantSystem-Final\RestaurantSystem\wwwroot\lib\bootstrap\dist\css\bootstrap-utilities.css
+C:\Users\Jun Yu\Documents\RestaurantSystem-Final\RestaurantSystem-Final\RestaurantSystem\wwwroot\lib\bootstrap\dist\css\bootstrap-utilities.css.map
+C:\Users\Jun Yu\Documents\RestaurantSystem-Final\RestaurantSystem-Final\RestaurantSystem\wwwroot\lib\bootstrap\dist\css\bootstrap-utilities.min.css
+C:\Users\Jun Yu\Documents\RestaurantSystem-Final\RestaurantSystem-Final\RestaurantSystem\wwwroot\lib\bootstrap\dist\css\bootstrap-utilities.min.css.map
+C:\Users\Jun Yu\Documents\RestaurantSystem-Final\RestaurantSystem-Final\RestaurantSystem\wwwroot\lib\bootstrap\dist\css\bootstrap-utilities.rtl.css
+C:\Users\Jun Yu\Documents\RestaurantSystem-Final\RestaurantSystem-Final\RestaurantSystem\wwwroot\lib\bootstrap\dist\css\bootstrap-utilities.rtl.css.map
+C:\Users\Jun Yu\Documents\RestaurantSystem-Final\RestaurantSystem-Final\RestaurantSystem\wwwroot\lib\bootstrap\dist\css\bootstrap-utilities.rtl.min.css
+C:\Users\Jun Yu\Documents\RestaurantSystem-Final\RestaurantSystem-Final\RestaurantSystem\wwwroot\lib\bootstrap\dist\css\bootstrap-utilities.rtl.min.css.map
+C:\Users\Jun Yu\Documents\RestaurantSystem-Final\RestaurantSystem-Final\RestaurantSystem\wwwroot\lib\bootstrap\dist\css\bootstrap.css
+C:\Users\Jun Yu\Documents\RestaurantSystem-Final\RestaurantSystem-Final\RestaurantSystem\wwwroot\lib\bootstrap\dist\css\bootstrap.css.map
+C:\Users\Jun Yu\Documents\RestaurantSystem-Final\RestaurantSystem-Final\RestaurantSystem\wwwroot\lib\bootstrap\dist\css\bootstrap.min.css
+C:\Users\Jun Yu\Documents\RestaurantSystem-Final\RestaurantSystem-Final\RestaurantSystem\wwwroot\lib\bootstrap\dist\css\bootstrap.min.css.map
+C:\Users\Jun Yu\Documents\RestaurantSystem-Final\RestaurantSystem-Final\RestaurantSystem\wwwroot\lib\bootstrap\dist\css\bootstrap.rtl.css
+C:\Users\Jun Yu\Documents\RestaurantSystem-Final\RestaurantSystem-Final\RestaurantSystem\wwwroot\lib\bootstrap\dist\css\bootstrap.rtl.css.map
+C:\Users\Jun Yu\Documents\RestaurantSystem-Final\RestaurantSystem-Final\RestaurantSystem\wwwroot\lib\bootstrap\dist\css\bootstrap.rtl.min.css
+C:\Users\Jun Yu\Documents\RestaurantSystem-Final\RestaurantSystem-Final\RestaurantSystem\wwwroot\lib\bootstrap\dist\css\bootstrap.rtl.min.css.map
+C:\Users\Jun Yu\Documents\RestaurantSystem-Final\RestaurantSystem-Final\RestaurantSystem\wwwroot\lib\bootstrap\dist\js\bootstrap.bundle.js
+C:\Users\Jun Yu\Documents\RestaurantSystem-Final\RestaurantSystem-Final\RestaurantSystem\wwwroot\lib\bootstrap\dist\js\bootstrap.bundle.js.map
+C:\Users\Jun Yu\Documents\RestaurantSystem-Final\RestaurantSystem-Final\RestaurantSystem\wwwroot\lib\bootstrap\dist\js\bootstrap.bundle.min.js
+C:\Users\Jun Yu\Documents\RestaurantSystem-Final\RestaurantSystem-Final\RestaurantSystem\wwwroot\lib\bootstrap\dist\js\bootstrap.bundle.min.js.map
+C:\Users\Jun Yu\Documents\RestaurantSystem-Final\RestaurantSystem-Final\RestaurantSystem\wwwroot\lib\bootstrap\dist\js\bootstrap.esm.js
+C:\Users\Jun Yu\Documents\RestaurantSystem-Final\RestaurantSystem-Final\RestaurantSystem\wwwroot\lib\bootstrap\dist\js\bootstrap.esm.js.map
+C:\Users\Jun Yu\Documents\RestaurantSystem-Final\RestaurantSystem-Final\RestaurantSystem\wwwroot\lib\bootstrap\dist\js\bootstrap.esm.min.js
+C:\Users\Jun Yu\Documents\RestaurantSystem-Final\RestaurantSystem-Final\RestaurantSystem\wwwroot\lib\bootstrap\dist\js\bootstrap.esm.min.js.map
+C:\Users\Jun Yu\Documents\RestaurantSystem-Final\RestaurantSystem-Final\RestaurantSystem\wwwroot\lib\bootstrap\dist\js\bootstrap.js
+C:\Users\Jun Yu\Documents\RestaurantSystem-Final\RestaurantSystem-Final\RestaurantSystem\wwwroot\lib\bootstrap\dist\js\bootstrap.js.map
+C:\Users\Jun Yu\Documents\RestaurantSystem-Final\RestaurantSystem-Final\RestaurantSystem\wwwroot\lib\bootstrap\dist\js\bootstrap.min.js
+C:\Users\Jun Yu\Documents\RestaurantSystem-Final\RestaurantSystem-Final\RestaurantSystem\wwwroot\lib\bootstrap\dist\js\bootstrap.min.js.map
+C:\Users\Jun Yu\Documents\RestaurantSystem-Final\RestaurantSystem-Final\RestaurantSystem\wwwroot\lib\jquery-validation-unobtrusive\dist\jquery.validate.unobtrusive.js
+C:\Users\Jun Yu\Documents\RestaurantSystem-Final\RestaurantSystem-Final\RestaurantSystem\wwwroot\lib\jquery-validation-unobtrusive\dist\jquery.validate.unobtrusive.min.js
+C:\Users\Jun Yu\Documents\RestaurantSystem-Final\RestaurantSystem-Final\RestaurantSystem\wwwroot\lib\jquery-validation-unobtrusive\LICENSE.txt
+C:\Users\Jun Yu\Documents\RestaurantSystem-Final\RestaurantSystem-Final\RestaurantSystem\wwwroot\lib\jquery-validation\dist\additional-methods.js
+C:\Users\Jun Yu\Documents\RestaurantSystem-Final\RestaurantSystem-Final\RestaurantSystem\wwwroot\lib\jquery-validation\dist\additional-methods.min.js
+C:\Users\Jun Yu\Documents\RestaurantSystem-Final\RestaurantSystem-Final\RestaurantSystem\wwwroot\lib\jquery-validation\dist\jquery.validate.js
+C:\Users\Jun Yu\Documents\RestaurantSystem-Final\RestaurantSystem-Final\RestaurantSystem\wwwroot\lib\jquery-validation\dist\jquery.validate.min.js
+C:\Users\Jun Yu\Documents\RestaurantSystem-Final\RestaurantSystem-Final\RestaurantSystem\wwwroot\lib\jquery-validation\LICENSE.md
+C:\Users\Jun Yu\Documents\RestaurantSystem-Final\RestaurantSystem-Final\RestaurantSystem\wwwroot\lib\jquery\dist\jquery.js
+C:\Users\Jun Yu\Documents\RestaurantSystem-Final\RestaurantSystem-Final\RestaurantSystem\wwwroot\lib\jquery\dist\jquery.min.js
+C:\Users\Jun Yu\Documents\RestaurantSystem-Final\RestaurantSystem-Final\RestaurantSystem\wwwroot\lib\jquery\dist\jquery.min.map
+C:\Users\Jun Yu\Documents\RestaurantSystem-Final\RestaurantSystem-Final\RestaurantSystem\wwwroot\lib\jquery\dist\jquery.slim.js
+C:\Users\Jun Yu\Documents\RestaurantSystem-Final\RestaurantSystem-Final\RestaurantSystem\wwwroot\lib\jquery\dist\jquery.slim.min.js
+C:\Users\Jun Yu\Documents\RestaurantSystem-Final\RestaurantSystem-Final\RestaurantSystem\wwwroot\lib\jquery\dist\jquery.slim.min.map
+C:\Users\Jun Yu\Documents\RestaurantSystem-Final\RestaurantSystem-Final\RestaurantSystem\wwwroot\lib\jquery\LICENSE.txt

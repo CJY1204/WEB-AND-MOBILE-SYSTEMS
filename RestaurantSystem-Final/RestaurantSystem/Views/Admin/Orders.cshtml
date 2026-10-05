@@ -1,0 +1,163 @@
+@model List<RestaurantSystem.Models.ViewModels.OrderVM>
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Order Management";
+    ViewBag.ActiveMenu = "Orders";
+
+    string selectedStatus = ViewBag.SelectedStatus as string ?? "ALL";
+    string search = ViewBag.Search as string ?? "";
+}
+
+<div class="admin-page-header">
+    <div>
+        <h2>Order Management</h2>
+        <span class="text-muted small">View and manage all customer orders</span>
+    </div>
+</div>
+
+<!-- Status filter + search bar -->
+<div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+    <div class="btn-group shadow-sm" role="group">
+        <a asp-action="Orders" asp-route-status="ALL" asp-route-search="@search"
+           class="btn @(selectedStatus == "ALL" ? "btn-admin text-white" : "btn-outline-admin") rounded-pill px-3">
+            All
+        </a>
+        <a asp-action="Orders" asp-route-status="PENDING" asp-route-search="@search"
+           class="btn @(selectedStatus == "PENDING" ? "btn-admin text-white" : "btn-outline-admin") rounded-pill px-3">
+            Pending
+        </a>
+        <a asp-action="Orders" asp-route-status="COMPLETED" asp-route-search="@search"
+           class="btn @(selectedStatus == "COMPLETED" ? "btn-admin text-white" : "btn-outline-admin") rounded-pill px-3">
+            Completed
+        </a>
+        <a asp-action="Orders" asp-route-status="CANCELLED" asp-route-search="@search"
+           class="btn @(selectedStatus == "CANCELLED" ? "btn-admin text-white" : "btn-outline-admin") rounded-pill px-3">
+            Cancelled
+        </a>
+    </div>
+
+    <form asp-action="Orders" method="get" class="d-flex align-items-center gap-2 ms-auto">
+        <input type="hidden" name="status" value="@selectedStatus" />
+        <input type="text" name="search" value="@search" class="form-control admin-search" placeholder="Search by order ID, customer, table..." />
+        <button type="submit" class="btn btn-admin rounded-pill px-2 py-1 fw-bold" title="Search">Search</button>
+        <a asp-action="ExportOrdersPdf" asp-route-status="@selectedStatus" asp-route-search="@search"
+           class="btn btn-danger rounded-pill px-4 py-1 fw-bold text-white text-nowrap" title="Export PDF">
+            <i class="fa-solid fa-file-pdf me-1"></i>Export PDF
+        </a>
+    </form>
+</div>
+
+<!-- Order list -->
+<div class="card border-0 shadow-sm rounded-4 overflow-hidden admin-table-card">
+    <table class="table table-hover align-middle mb-0">
+        <thead>
+                <tr>
+                    <th>#</th>
+                <th>Order ID</th>
+                <th>Customer</th>
+                <th>Table</th>
+                <th>Date</th>
+                <th>Total</th>
+                <th>Status</th>
+                    <th class="text-end">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model.Any())
+            {
+                int index = 1;
+                foreach (var order in Model)
+                {
+                    string statusBadge = order.OrderStatus switch
+                    {
+                        "PENDING" => "bg-warning text-dark",
+                        "COMPLETED" => "bg-success",
+                        "CANCELLED" => "bg-danger",
+                        _ => "bg-secondary"
+                    };
+
+                    <tr class="order-row" data-toggle="details-@order.OrderId" style="cursor:pointer;">
+                        <td class="text-muted">@index</td>
+                        <td class="fw-semibold">#@order.OrderId</td>
+                        <td>@order.CustomerName</td>
+                        <td>@(order.TableName ?? "Takeaway")</td>
+                        <td>@order.OrderDate.ToString("dd MMM yyyy, hh:mm tt")</td>
+                        <td class="fw-bold">RM @order.TotalAmount.ToString("F2")</td>
+                        <td><span class="badge @statusBadge rounded-pill">@order.OrderStatus</span></td>
+                        <td class="text-end">
+                            <div class="table-actions" onclick="event.stopPropagation();">
+                                <form asp-action="UpdateOrderStatus" method="post" class="d-inline">
+                                    <input type="hidden" name="id" value="@order.OrderId" />
+                                    <input type="hidden" name="status" value="PENDING" />
+                                    <button type="submit" class="btn btn-sm btn-warning rounded-pill px-2 py-1 fw-bold" title="Set Pending">Pend</button>
+                                </form>
+                                <form asp-action="UpdateOrderStatus" method="post" class="d-inline">
+                                    <input type="hidden" name="id" value="@order.OrderId" />
+                                    <input type="hidden" name="status" value="COMPLETED" />
+                                    <button type="submit" class="btn btn-sm btn-success rounded-pill px-2 py-1 fw-bold" title="Set Completed">Complete</button>
+                                </form>
+                                <form asp-action="UpdateOrderStatus" method="post" class="d-inline">
+                                    <input type="hidden" name="id" value="@order.OrderId" />
+                                    <input type="hidden" name="status" value="CANCELLED" />
+                                    <button type="submit" class="btn btn-sm btn-danger rounded-pill px-2 py-1 fw-bold" title="Set Cancelled">Cancel</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <!-- Order detail row -->
+                    <tr class="details-row" id="details-@order.OrderId" style="display:none;">
+                        <td colspan="8" class="p-0">
+                            <div class="bg-light p-3">
+                                <table class="table table-sm mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Product</th>
+                                            <th>Qty</th>
+                                            <th>Price</th>
+                                            <th>Subtotal</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var item in order.Details)
+                                        {
+                                            <tr>
+                                                <td>@item.ProductName</td>
+                                                <td>@item.Quantity</td>
+                                                <td>RM @item.PriceAtOrder.ToString("F2")</td>
+                                                <td class="fw-bold">RM @item.Subtotal.ToString("F2")</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </td>
+                    </tr>
+
+                    index++;
+                }
+            }
+            else
+            {
+                <tr>
+                    <td colspan="8" class="text-center text-muted py-5">
+                        <i class="fa-solid fa-receipt fs-2 d-block mb-2"></i>
+                        No orders found matching your criteria.
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@section Scripts {
+    <script>
+        $(function() {
+            // Expand/collapse order details
+            $('.order-row').on('click', function() {
+                var target = $(this).data('toggle');
+                $('#' + target).toggle();
+            });
+        });
+    </script>
+}

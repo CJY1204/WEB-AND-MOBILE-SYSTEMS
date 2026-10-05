@@ -1,0 +1,135 @@
+﻿@model RestaurantSystem.Models.ViewModels.CheckoutVM
+@using Microsoft.AspNetCore.Mvc.Rendering
+@{
+    ViewData["Title"] = "Checkout";
+}
+
+<div class="container my-5">
+    <h2 class="mb-4"><i class="fa-solid fa-bag-shopping me-2"></i>Checkout</h2>
+
+    @if (TempData["Info"] != null)
+    {
+        <div class="alert alert-info alert-dismissible fade show" role="alert">
+            <i class="fa-solid fa-circle-info me-2"></i>@TempData["Info"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="row">
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0 fw-bold">Order Summary</h5>
+                </div>
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-4">Dish</th>
+                                <th class="text-center">Qty</th>
+                                <th class="text-end pe-4">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model.CartItems)
+                            {
+                                <tr>
+                                    <td class="ps-4">@item.ProductName</td>
+                                    <td class="text-center">@item.Quantity</td>
+                                    <td class="text-end pe-4">RM @item.Total.ToString("F2")</td>
+                                </tr>
+                            }
+                        </tbody>
+                        <tfoot>
+                            <tr class="table-light">
+                                <td class="ps-4 fw-bold" colspan="2">Grand Total</td>
+                                <td class="text-end pe-4 fw-bold text-success fs-5">RM @Model.GrandTotal.ToString("F2")</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0 fw-bold">How would you like your order?</h5>
+                </div>
+                <div class="card-body p-4">
+                    <form asp-action="Checkout" asp-controller="Order" method="post">
+                        @Html.AntiForgeryToken()
+
+                        <div asp-validation-summary="All" class="text-danger mb-3"></div>
+
+                        <div class="d-flex gap-3 mb-4">
+                            <div class="form-check dining-option flex-fill border rounded-3 p-3">
+                                <input class="form-check-input" type="radio" name="DiningOption" id="optTakeaway" value="Takeaway"
+                                       checked="@(Model.DiningOption != "DineIn")" onclick="toggleTableSelect(false)">
+                                <label class="form-check-label fw-bold w-100" for="optTakeaway">
+                                    <i class="fa-solid fa-bag-shopping me-2 text-orange"></i>Takeaway
+                                </label>
+                            </div>
+                            <div class="form-check dining-option flex-fill border rounded-3 p-3">
+                                <input class="form-check-input" type="radio" name="DiningOption" id="optDineIn" value="DineIn"
+                                       checked="@(Model.DiningOption == "DineIn")" onclick="toggleTableSelect(true)"
+                                       disabled="@(!Model.AvailableTables.Any())">
+                                <label class="form-check-label fw-bold w-100" for="optDineIn">
+                                    <i class="fa-solid fa-utensils me-2 text-orange"></i>Dine-in
+                                </label>
+                            </div>
+                        </div>
+
+                        <div id="tableSelectBox" class="mb-4 @(Model.DiningOption == "DineIn" ? "" : "d-none")">
+                            <label class="form-label fw-bold">Select an available table</label>
+                            @if (Model.AvailableTables.Any())
+                            {
+                                <select name="TableId" class="form-select" asp-items="@(new SelectList(Model.AvailableTables, "TableId", "TableName", Model.TableId))">
+                                    <option value="">-- Choose a table --</option>
+                                </select>
+                            }
+                            else
+                            {
+                                <div class="text-muted small">No tables are available right now. Please choose Takeaway instead.</div>
+                            }
+                        </div>
+
+                        <div id="addressBox" class="mb-4 @(Model.DiningOption == "DineIn" ? "d-none" : "")">
+                            <label class="form-label fw-bold">Takeaway Address</label>
+                            <textarea name="Address" class="form-control" rows="2" placeholder="Enter your address">@Model.Address</textarea>
+                            <span asp-validation-for="Address" class="text-danger small"></span>
+                            <div class="form-text">We'll save this to your profile for next time.</div>
+                        </div>
+
+                        <button type="submit" class="btn btn-orange btn-lg w-100 fw-bold">
+                            Continue to Payment <i class="fa-solid fa-arrow-right ms-2"></i>
+                        </button>
+                    </form>
+                    <a asp-action="Cart" asp-controller="Home" class="btn btn-outline-secondary w-100 mt-2">
+                        <i class="fa-solid fa-arrow-left me-2"></i>Back to Cart
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .dining-option {
+        cursor: pointer;
+    }
+</style>
+
+<script>
+    function toggleTableSelect(isDineIn) {
+        const tableBox = document.getElementById("tableSelectBox");
+        const addressBox = document.getElementById("addressBox");
+        if (isDineIn) {
+            tableBox.classList.remove("d-none");
+            addressBox.classList.add("d-none");
+        } else {
+            tableBox.classList.add("d-none");
+            addressBox.classList.remove("d-none");
+        }
+    }
+</script>

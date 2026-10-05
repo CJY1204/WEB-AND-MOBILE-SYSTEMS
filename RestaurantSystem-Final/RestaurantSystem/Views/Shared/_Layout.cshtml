@@ -1,0 +1,240 @@
+﻿@using System.Text.Json
+@using Microsoft.AspNetCore.Http
+@using RestaurantSystem.Models
+@using static RestaurantSystem.Models.ViewModels
+@inject IHttpContextAccessor HttpContextAccessor
+@inject RestaurantDbContext DbContext
+
+@{
+    // 1. Cart count: still read from Session (cart is intentionally temporary)
+    var session = HttpContextAccessor.HttpContext?.Session;
+    int layoutCartCount = 0;
+
+    if (session != null)
+    {
+        // NOTE: this key must match the constant used in HomeController's Cart actions
+        var cartData = session.GetString("OrderingCart");
+        if (!string.IsNullOrEmpty(cartData))
+        {
+            var cart = JsonSerializer.Deserialize<List<CartItemVM>>(cartData);
+            if (cart != null)
+            {
+                layoutCartCount = cart.Sum(item => item.Quantity);
+            }
+        }
+    }
+
+    // 2. Favorite count: read directly from the database (persisted per account)
+    int layoutFavoriteCount = 0;
+    if (User.Identity?.IsAuthenticated == true)
+    {
+        var currentUsername = User.Identity?.Name ?? "";
+        var currentUser = DbContext.Users.FirstOrDefault(u => u.Username == currentUsername);
+        if (currentUser != null)
+        {
+            layoutFavoriteCount = DbContext.Favorites.Count(f => f.UserId == currentUser.UserId);
+        }
+    }
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - BITE. Modern Restaurant</title>
+
+    <!-- Apply the saved theme BEFORE anything renders, to avoid a light-mode flash -->
+    <script>
+            (function() {
+                var savedTheme = localStorage.getItem("bite-theme");
+                if (savedTheme === "dark") {
+                    document.documentElement.classList.add("dark-mode");
+                }
+            })();
+    </script>
+
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/lib/font-awesome/css/all.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/dark-mode.css" asp-append-version="true" />
+    <style>
+            body {
+                font-family: 'Segoe UI', sans-serif;
+                background-color: #f8f9fa;
+            }
+
+            .navbar-custom {
+                background-color: #1a1a1a;
+            }
+
+                .navbar-custom .navbar-brand, .navbar-custom .nav-link {
+                    color: #ffffff !important;
+                }
+
+                    .navbar-custom .nav-link:hover {
+                        color: #ff9f43 !important;
+                    }
+
+            .btn-orange {
+                background-color: #ff9f43;
+                color: white;
+                border: none;
+            }
+
+                .btn-orange:hover {
+                    background-color: #ee5253;
+                    color: white;
+                }
+
+            footer {
+                background-color: #1a1a1a;
+                color: #b5b5b5;
+            }
+    </style>
+</head>
+<body>
+    <header>
+        <nav class="navbar navbar-expand-sm navbar-custom border-bottom mb-3">
+            <div class="container-fluid px-4">
+                <a class="navbar-brand fw-bold" asp-controller="Home" asp-action="Index">
+                    BITE <span style="color:#ff9f43">Restaurant</span>
+                </a>
+                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
+                    <ul class="navbar-nav flex-grow-1">
+                        <li class="nav-item">
+                            <a class="nav-link px-3" asp-controller="Home" asp-action="Index">Home</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link px-3" asp-controller="Home" asp-action="Menu">Our Menu</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link px-3" asp-controller="Home" asp-action="Tables">Tables</a>
+                        </li>
+                    </ul>
+
+                    <div class="d-flex align-items-center gap-3">
+                        @if (User.Identity?.IsAuthenticated == true && User.IsInRole("ADMIN"))
+                        {
+                            <a asp-controller="Admin" asp-action="Dashboard" class="btn btn-outline-warning rounded-pill px-3">
+                                Admin Panel
+                            </a>
+                        }
+                        else
+                        {
+                            <a asp-controller="Home" asp-action="Favorites" class="btn btn-outline-light rounded-pill position-relative px-3">
+                                <i class="fa-solid fa-heart"></i> Favorites
+                                <span id="favorite-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                    @layoutFavoriteCount
+                                </span>
+                            </a>
+
+                            <a asp-controller="Home" asp-action="Cart" class="btn btn-outline-light rounded-pill position-relative px-3">
+                                <i class="fa-solid fa-basket-shopping"></i> Cart
+                                <span id="cart-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                    @layoutCartCount
+                                </span>
+                            </a>
+                        }
+
+                        <ul class="navbar-nav">
+                            @if (User.Identity?.IsAuthenticated == true)
+                            {
+                                <li class="nav-item dropdown">
+                                    <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                                        Hi, @User.Identity.Name
+                                    </a>
+                                    <ul class="dropdown-menu dropdown-menu-end">
+                                        <li>
+                                            <a class="dropdown-item" asp-controller="Account" asp-action="Profile">Profile</a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item" asp-controller="Order" asp-action="History">My Orders</a>
+                                        </li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li>
+                                            <button class="dropdown-item text-danger w-100 text-start bg-transparent border-0" id="ajax-logout-btn">
+                                                Logout
+                                            </button>
+                                        </li>
+                                    </ul>
+                                </li>
+                            }
+                            else
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link" asp-controller="Account" asp-action="Login">Sign In</a>
+                                </li>
+                            }
+                        </ul>
+
+                        <!-- Dark mode toggle: kept as the last (rightmost) item in the navbar -->
+                        <button type="button" id="theme-toggle-btn" class="theme-toggle-btn" title="Toggle dark mode">
+                            <i class="fa-solid fa-moon" id="theme-toggle-icon"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <div class="container-fluid px-4" style="min-height: 80vh;">
+        <main role="main" class="pb-5">
+            @RenderBody()
+        </main>
+    </div>
+
+    <footer class="border-top py-4 text-center navbar-custom text-white-50 mt-5">
+        &copy; 2026 - AMIT2014 Assignment Team
+    </footer>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+            $(document).ready(function() {
+                $("#ajax-logout-btn").click(function(e) {
+                    e.preventDefault();
+                    if (confirm("Are you sure you want to logout?")) {
+                        $.ajax({
+                            url: '@Url.Action("Logout", "Account")',
+                            type: 'POST',
+                            success: function(response) {
+                                window.location.href = '@Url.Action("Index", "Home")';
+                            },
+                            error: function() {
+                                alert("Logout failed. Please try again.");
+                            }
+                        });
+                    }
+                });
+            });
+    </script>
+
+    <!-- Dark mode toggle logic -->
+    <script>
+            (function() {
+                var htmlEl = document.documentElement;
+                var toggleBtn = document.getElementById("theme-toggle-btn");
+                var toggleIcon = document.getElementById("theme-toggle-icon");
+
+                function updateIcon() {
+                    var isDark = htmlEl.classList.contains("dark-mode");
+                    toggleIcon.classList.toggle("fa-moon", !isDark);
+                    toggleIcon.classList.toggle("fa-sun", isDark);
+                    toggleBtn.title = isDark ? "Switch to light mode" : "Switch to dark mode";
+                }
+
+                updateIcon();
+
+                toggleBtn.addEventListener("click", function() {
+                    htmlEl.classList.toggle("dark-mode");
+                    var isDark = htmlEl.classList.contains("dark-mode");
+                    localStorage.setItem("bite-theme", isDark ? "dark" : "light");
+                    updateIcon();
+                });
+            })();
+    </script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

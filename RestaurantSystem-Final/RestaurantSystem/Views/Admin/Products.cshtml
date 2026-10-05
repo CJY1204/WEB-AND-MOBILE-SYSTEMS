@@ -1,0 +1,117 @@
+@model List<Product>
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Product Management";
+    ViewBag.ActiveMenu = "Products";
+}
+
+<div class="admin-page-header">
+    <div>
+        <h2>Product Management</h2>
+        <span class="text-muted small">Manage menu items and inventory</span>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+        <button type="button" id="headerDeleteBtn" class="btn btn-danger rounded-pill px-4 fw-bold" onclick="submitBulkDelete()">
+            <i class="fa-solid fa-trash me-1"></i> Delete ☑
+        </button>
+        <a asp-action="CreateProduct" class="btn btn-orange rounded-pill px-4 fw-bold">
+            <i class="fa-solid fa-plus me-1"></i> Add Product
+        </a>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm rounded-4 overflow-hidden admin-table-card">
+    <div class="card-body p-0">
+        <table class="table table-hover align-middle mb-0">
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>ID</th>
+                    <th>Image</th>
+                    <th>Name</th>
+                    <th>Category</th>
+                    <th>Price</th>
+                    <th>Stock</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td><input type="checkbox" class="form-check-input row-checkbox" value="@item.ProductId" /></td>
+                        <td class="fw-bold">@item.ProductId</td>
+                        <td>
+                            @if (!string.IsNullOrEmpty(item.ImageUrl))
+                            {
+                                <img src="@item.ImageUrl" alt="@item.ProductName" style="width:50px;height:50px;object-fit:cover;" class="rounded-3" />
+                            }
+                        </td>
+                        <td class="fw-semibold">@item.ProductName</td>
+                        <td>@item.Category?.CategoryName</td>
+                        <td>RM @item.Price.ToString("F2")</td>
+                        <td>
+                            @if (item.StockQuantity == 0)
+                            {
+                                <span class="badge bg-dark rounded-pill px-3 py-2">Out of Stock</span>
+                            }
+                            else if (item.StockQuantity < 20)
+                            {
+                                <span class="badge bg-danger rounded-pill px-3 py-2">@item.StockQuantity left</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-success rounded-pill px-3 py-2">@item.StockQuantity in stock</span>
+                            }
+                        </td>
+                        <td class="text-end">
+                            <div class="table-actions">
+                                <a asp-action="EditProduct" asp-route-id="@item.ProductId" class="btn btn-sm btn-secondary rounded-pill px-2 py-1 fw-bold">Edit</a>
+                                <a asp-action="DeleteProduct" asp-route-id="@item.ProductId" class="btn btn-sm btn-danger rounded-pill px-2 py-1 fw-bold">Delete</a>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<form id="bulkForm" asp-action="DeleteProductsBatch" method="post" class="d-none"></form>
+
+<a asp-action="Dashboard" class="btn btn-outline-admin rounded-pill mt-3">Back to Dashboard</a>
+
+@section Scripts {
+    <script>
+        $(function () {
+            $('.row-checkbox').on('change', function () {
+                updateBulkBar();
+            });
+        });
+
+        function updateBulkBar() {
+            var count = $('.row-checkbox:checked').length;
+            if (count > 0) {
+                $('#headerDeleteBtn').removeClass('d-none');
+            } else {
+                $('#headerDeleteBtn').addClass('d-none');
+            }
+        }
+
+        function submitBulkDelete() {
+            if ($('.row-checkbox:checked').length === 0) {
+                alert('Please select at least one product to delete.');
+                return;
+            }
+            if (!confirm('Are you sure you want to delete the selected products? This cannot be undone.')) {
+                return;
+            }
+            var $form = $('#bulkForm');
+            $form.find('input[name="ids"]').remove();
+            $('.row-checkbox:checked').each(function () {
+                $form.append('<input type="hidden" name="ids" value="' + $(this).val() + '" />');
+            });
+            $form.submit();
+        }
+    </script>
+}

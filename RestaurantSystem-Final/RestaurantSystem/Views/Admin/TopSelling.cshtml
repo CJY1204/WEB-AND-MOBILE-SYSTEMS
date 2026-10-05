@@ -1,0 +1,86 @@
+@model TopSellingVM
+@{
+    Layout = "~/Views/Admin/_AdminLayout.cshtml";
+    ViewData["Title"] = "Top-Selling Foods";
+    ViewBag.ActiveMenu = "ReportTopSelling";
+}
+
+<div class="admin-page-header">
+    <div>
+        <h2>Top-Selling Foods</h2>
+        <span class="text-muted small">Best performing menu items</span>
+    </div>
+    <form method="get" asp-action="TopSelling" class="d-flex align-items-center gap-2 flex-wrap">
+        <input type="date" name="from" value="@(Model.From.HasValue ? Model.From.Value.ToString("yyyy-MM-dd") : "")" class="form-control rounded-pill" style="width:160px;" />
+        <span class="text-muted">&ndash;</span>
+        <input type="date" name="to" value="@(Model.To.HasValue ? Model.To.Value.ToString("yyyy-MM-dd") : "")" class="form-control rounded-pill" style="width:160px;" />
+        <button type="submit" class="btn btn-admin rounded-pill px-3 fw-bold">View</button>
+        <a asp-action="TopSelling" class="btn btn-outline-secondary rounded-pill">All Time</a>
+    </form>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-6 mb-3">
+        <div class="card border-0 shadow-sm rounded-4 p-4 text-white bg-dark">
+            <h6 class="text-uppercase opacity-75">Total Revenue</h6>
+            <h2 class="display-6 fw-bold">RM @Model.TotalRevenue.ToString("N2")</h2>
+            <small class="opacity-75">@(Model.From?.ToString("MMM dd, yyyy")) - @(Model.To?.ToString("MMM dd, yyyy"))</small>
+        </div>
+    </div>
+    <div class="col-md-6 mb-3">
+        <div class="card border-0 shadow-sm rounded-4 p-4 bg-light text-dark">
+            <h6 class="text-uppercase text-muted">Total Orders</h6>
+            <h2 class="display-6 fw-bold text-orange">@Model.TotalOrders</h2>
+            <small class="text-muted">Unique items sold: @Model.Items.Count</small>
+        </div>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm rounded-4 overflow-hidden admin-table-card">
+    <div class="p-4 pb-0">
+        <h4 class="fw-bold">Ranking</h4>
+    </div>
+    @if (Model.Items.Count == 0)
+    {
+        <div class="p-4">
+            <div class="alert alert-info rounded-4">No sales recorded in the selected period.</div>
+        </div>
+    }
+    else
+    {
+        decimal maxQty = Model.Items.Max(x => x.Quantity);
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th style="width:60px;">#</th>
+                        <th>Product</th>
+                        <th style="width:30%;">Popularity</th>
+                        <th class="text-center">Quantity</th>
+                        <th class="text-end">Revenue</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (int i = 0; i < Model.Items.Count; i++)
+                    {
+                        var item = Model.Items[i];
+                        decimal pct = maxQty > 0 ? (decimal)item.Quantity / maxQty * 100 : 0;
+                        <tr>
+                            <td>
+                                <span class="badge @(i < 3 ? "bg-warning text-dark" : "bg-dark") rounded-pill px-3 py-2">@(i + 1)</span>
+                            </td>
+                            <td class="fw-semibold">@item.ProductName</td>
+                            <td>
+                                <div class="progress rounded-pill" style="height:10px;">
+                                    <div class="progress-bar @(i < 3 ? "bg-warning" : "bg-success")" style="width:@pct.ToString("0")%"></div>
+                                </div>
+                            </td>
+                            <td class="text-center fw-bold">@item.Quantity</td>
+                            <td class="text-end">RM @item.Revenue.ToString("N2")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

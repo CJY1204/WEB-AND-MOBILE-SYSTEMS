@@ -1,0 +1,138 @@
+@model List<RestaurantSystem.Models.User>
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "User Management";
+    ViewBag.ActiveMenu = "UserManage";
+
+    string selectedRole = ViewBag.SelectedRole as string ?? "ALL";
+    string search = ViewBag.Search as string ?? "";
+}
+
+<div class="admin-page-header">
+    <div>
+        <h2>User Management</h2>
+        <span class="text-muted small">Manage members and admin accounts</span>
+    </div>
+    <a asp-action="UserCreate" class="btn btn-orange rounded-pill px-4 fw-bold">
+        <i class="fa-solid fa-user-plus me-1"></i> Create New User
+    </a>
+</div>
+
+<div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+    <div class="btn-group shadow-sm" role="group">
+        <a asp-action="UserManage" asp-route-role="ALL" asp-route-search="@search"
+           class="btn @(selectedRole == "ALL" ? "btn-admin text-white" : "btn-outline-admin") rounded-pill px-3">
+            All
+        </a>
+        <a asp-action="UserManage" asp-route-role="MEMBER" asp-route-search="@search"
+           class="btn @(selectedRole == "MEMBER" ? "btn-admin text-white" : "btn-outline-admin") rounded-pill px-3">
+            Member
+        </a>
+        <a asp-action="UserManage" asp-route-role="ADMIN" asp-route-search="@search"
+           class="btn @(selectedRole == "ADMIN" ? "btn-admin text-white" : "btn-outline-admin") rounded-pill px-3">
+            Admin
+        </a>
+    </div>
+
+    <form asp-action="UserManage" method="get" class="d-flex align-items-center gap-2 ms-auto">
+        <input type="hidden" name="role" value="@selectedRole" />
+        <input type="text" name="search" value="@search" class="form-control admin-search" placeholder="Search by username, name, email, phone..." />
+        <button type="submit" class="btn btn-admin rounded-pill px-3 fw-bold" title="Search">Search</button>
+        <a asp-action="ExportUsersPdf" asp-route-role="@selectedRole" asp-route-search="@search"
+           class="btn btn-danger rounded-pill px-4 py-1 fw-bold text-white text-nowrap" title="Export PDF">
+            <i class="fa-solid fa-file-pdf me-1"></i>Export PDF
+        </a>
+    </form>
+</div>
+
+<div class="card border-0 shadow-sm rounded-4 overflow-hidden admin-table-card">
+    <table class="table table-hover align-middle mb-0">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Username</th>
+                <th>Full Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th class="text-end">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model.Any())
+            {
+                int index = 1;
+                foreach (var user in Model)
+                {
+                    <tr>
+                        <td class="text-muted">@index</td>
+                        <td class="fw-semibold">
+                            @user.Username
+                            @if (user.Username == User.Identity?.Name)
+                            {
+                                <span class="badge bg-orange text-white ms-1">You</span>
+                            }
+                        </td>
+                        <td>@user.FullName</td>
+                        <td>@user.Email</td>
+                        <td>@(string.IsNullOrEmpty(user.PhoneNumber) ? "-" : user.PhoneNumber)</td>
+                        <td>
+                            <span class="badge bg-dark text-white rounded-pill">
+                                @(user.Role == "ADMIN" ? "Admin" : "Member")
+                            </span>
+                        </td>
+                        <td>
+                            @if (user.IsBlocked)
+                            {
+                                <span class="badge bg-danger rounded-pill">Blocked</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-success rounded-pill">Active</span>
+                            }
+                        </td>
+                        <td>
+                            <div class="table-actions">
+                                <a asp-action="UserEdit" asp-route-id="@user.UserId" class="btn btn-sm btn-secondary rounded-pill px-2 py-1 fw-bold" title="Edit">Edit</a>
+
+                                @if (user.Role == "MEMBER")
+                                {
+                                    @if (user.IsBlocked)
+                                    {
+                                        <form asp-action="ToggleBlock" asp-route-id="@user.UserId" method="post" class="d-inline" onsubmit="return confirm('Unblock this member?');">
+                                            <button type="submit" class="btn btn-sm btn-warning rounded-pill px-2 py-1 fw-bold" title="Unblock">Unblock</button>
+                                        </form>
+                                    }
+                                    else
+                                    {
+                                        <form asp-action="ToggleBlock" asp-route-id="@user.UserId" method="post" class="d-inline" onsubmit="return confirm('Block this member? They will be unable to log in.');">
+                                            <button type="submit" class="btn btn-sm btn-warning rounded-pill px-2 py-1 fw-bold" title="Block">Block</button>
+                                        </form>
+                                    }
+                                }
+
+                                @if (user.Username != User.Identity?.Name)
+                                {
+                                    <form asp-action="DeleteUser" asp-route-id="@user.UserId" method="post" class="d-inline" onsubmit="return confirm('Delete this user permanently? This action cannot be undone.');">
+                                        <button type="submit" class="btn btn-sm btn-danger rounded-pill px-2 py-1 fw-bold" title="Delete">Delete</button>
+                                    </form>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                    index++;
+                }
+            }
+            else
+            {
+                <tr>
+                    <td colspan="8" class="text-center text-muted py-5">
+                        <i class="fa-solid fa-user-slash fs-2 d-block mb-2"></i>
+                        No users found matching your criteria.
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

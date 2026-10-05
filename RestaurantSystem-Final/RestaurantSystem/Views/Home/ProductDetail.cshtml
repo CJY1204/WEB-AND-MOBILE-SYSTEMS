@@ -1,0 +1,277 @@
+﻿@model RestaurantSystem.Models.Product
+@{
+    ViewData["Title"] = Model.ProductName;
+    string categoryName = ViewBag.CategoryName as string ?? "Uncategorized";
+    bool isFavorited = ViewBag.IsFavorited is bool fav && fav;
+    var related = ViewBag.RelatedProducts as List<RestaurantSystem.Models.Product>;
+}
+
+<div class="container py-4">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Home</a></li>
+            <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Menu">Our Menu</a></li>
+            <li class="breadcrumb-item active" aria-current="page">@Model.ProductName</li>
+        </ol>
+    </nav>
+
+    <div class="row g-5">
+        <div class="col-md-6">
+            <img src="@Model.ImageUrl" class="img-fluid rounded-4 shadow-sm w-100" style="max-height: 480px; object-fit: cover;" alt="@Model.ProductName">
+        </div>
+
+        <div class="col-md-6">
+            <span class="badge bg-orange mb-3 px-3 py-2 rounded-pill">@categoryName</span>
+            <h1 class="fw-bold mb-3">@Model.ProductName</h1>
+            <p class="text-muted fs-6 mb-4">@Model.Description</p>
+
+            <div class="fw-bold text-orange mb-2" style="font-size: 2rem;">RM @Model.Price.ToString("F2")</div>
+
+            @if (Model.StockQuantity <= 0)
+            {
+                <div class="text-danger fw-bold mb-3"><i class="fa-solid fa-circle-exclamation me-1"></i>Out of Stock</div>
+            }
+            else if (Model.StockQuantity <= 10)
+            {
+                <div class="text-warning fw-bold mb-3"><i class="fa-solid fa-triangle-exclamation me-1"></i>Only @Model.StockQuantity left!</div>
+            }
+            else
+            {
+                <div class="mb-3"></div>
+            }
+
+            @if (User.Identity?.IsAuthenticated == true && User.IsInRole("ADMIN"))
+            {
+                <a asp-controller="Admin" asp-action="EditProduct" asp-route-id="@Model.ProductId" class="btn btn-outline-danger rounded-pill px-4 fw-bold">
+                    Manage Item
+                </a>
+            }
+            else if (User.Identity?.IsAuthenticated == true && Model.StockQuantity <= 0)
+            {
+                <button type="button" class="btn btn-secondary rounded-pill px-4 fw-bold" disabled>Out of Stock</button>
+            }
+            else if (User.Identity?.IsAuthenticated == true)
+            {
+                <div class="d-flex gap-3">
+                    <form asp-action="AddAjax" asp-controller="Home" method="post" class="add-to-cart-form flex-grow-1">
+                        <input type="hidden" name="productId" value="@Model.ProductId" />
+                        <input type="hidden" name="quantity" id="qty-input" value="1" />
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="input-group" style="width: 130px;">
+                                <button type="button" id="qty-minus" class="btn btn-outline-secondary">−</button>
+                                <input type="text" id="qty-display" readonly class="form-control text-center" value="1" />
+                                <button type="button" id="qty-plus" class="btn btn-outline-secondary">+</button>
+                            </div>
+                            <button type="submit" class="btn btn-orange rounded-pill px-4 fw-bold flex-grow-1">
+                                <i class="fa-solid fa-cart-plus me-2"></i>Add to Cart
+                            </button>
+                        </div>
+                    </form>
+
+                    <button type="button"
+                            class="btn rounded-circle flex-shrink-0 d-inline-flex align-items-center justify-content-center add-to-favorite-btn @(isFavorited ? "btn-danger in-favorite" : "btn-outline-secondary")"
+                            data-product-id="@Model.ProductId"
+                            title="Add to Favorites"
+                            style="width: 48px; height: 48px; padding: 0;"
+                            disabled="@(isFavorited ? "disabled" : null)">
+                        <i class="fa-solid fa-heart"></i>
+                    </button>
+                </div>
+            }
+            else
+            {
+                <a asp-controller="Account" asp-action="Login" class="btn btn-outline-secondary rounded-pill px-4 fw-bold">
+                    Login to Order
+                </a>
+            }
+        </div>
+    </div>
+
+    @if (related != null && related.Any())
+    {
+        <hr class="my-5" />
+        <h4 class="fw-bold mb-4">You might also like</h4>
+        <div class="row">
+            @foreach (var item in related)
+            {
+                <div class="col-md-4 mb-4">
+                    <a asp-action="ProductDetail" asp-route-id="@item.ProductId" class="text-decoration-none text-dark">
+                        <div class="card h-100 shadow-sm border-0 rounded-4 overflow-hidden">
+                            <img src="@item.ImageUrl" class="card-img-top" style="height: 160px; object-fit: cover;" alt="@item.ProductName">
+                            <div class="card-body">
+                                <h6 class="fw-bold mb-1">@item.ProductName</h6>
+                                <span class="fw-bold text-orange">RM @item.Price.ToString("F2")</span>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+<style>
+    .local-toast {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        background: rgba(30, 41, 59, 0.95);
+        color: #ffffff;
+        padding: 14px 24px;
+        border-radius: 12px;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+        font-size: 14px;
+        font-weight: 600;
+        z-index: 99999;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        pointer-events: none;
+        opacity: 0;
+        transform: translateY(20px) scale(0.95);
+        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+        .local-toast.show {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+
+        .local-toast::before {
+            content: "✓";
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            width: 20px;
+            height: 20px;
+            background: #10B981;
+            color: white;
+            border-radius: 50%;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+    .badge-bounce {
+        animation: badgeBounce 0.4s ease;
+    }
+
+    @@keyframes badgeBounce {
+        0% {
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        50% {
+            transform: translate(-50%, -50%) scale(1.4);
+        }
+
+        100% {
+            transform: translate(-50%, -50%) scale(1);
+        }
+    }
+</style>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+
+        function showLocalToast(message) {
+            const oldToast = document.querySelector(".local-toast");
+            if (oldToast) oldToast.remove();
+
+            const toast = document.createElement("div");
+            toast.className = "local-toast";
+            toast.innerText = message;
+            document.body.appendChild(toast);
+
+            setTimeout(() => toast.classList.add("show"), 50);
+            setTimeout(() => {
+                toast.classList.remove("show");
+                setTimeout(() => toast.remove(), 300);
+            }, 2500);
+        }
+
+        // Quantity stepper
+        const maxStock = @Model.StockQuantity;
+        const qtyDisplay = document.getElementById("qty-display");
+        const qtyInput = document.getElementById("qty-input");
+        const qtyMinus = document.getElementById("qty-minus");
+        const qtyPlus = document.getElementById("qty-plus");
+
+        if (qtyMinus && qtyPlus) {
+            qtyMinus.addEventListener("click", function() {
+                let val = Math.max(1, parseInt(qtyDisplay.value) - 1);
+                qtyDisplay.value = val;
+                qtyInput.value = val;
+            });
+            qtyPlus.addEventListener("click", function() {
+                let val = parseInt(qtyDisplay.value) + 1;
+                if (val > maxStock) {
+                    showLocalToast(`Only ${maxStock} left in stock.`);
+                    return;
+                }
+                qtyDisplay.value = val;
+                qtyInput.value = val;
+            });
+        }
+
+        // Add to Cart (AJAX)
+        document.querySelectorAll(".add-to-cart-form").forEach(form => {
+            form.addEventListener("submit", function(e) {
+                e.preventDefault();
+                const formData = new FormData(this);
+
+                fetch(this.action, { method: "POST", body: formData })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            const badge = document.getElementById("cart-badge");
+                            if (badge) {
+                                badge.innerText = data.cartCount;
+                                badge.classList.remove("badge-bounce");
+                                void badge.offsetWidth;
+                                badge.classList.add("badge-bounce");
+                            }
+                            showLocalToast(`${data.productName} added to cart!`);
+                        } else {
+                            alert("Error: " + data.message);
+                        }
+                    })
+                    .catch(err => console.error("AJAX error:", err));
+            });
+        });
+
+        // Add to Favorite (AJAX)
+        document.querySelectorAll(".add-to-favorite-btn").forEach(btn => {
+            btn.addEventListener("click", function() {
+                const productId = this.dataset.productId;
+
+                fetch("/Home/AddFavoriteAjax", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                    body: "productId=" + encodeURIComponent(productId)
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            this.classList.remove("btn-outline-secondary");
+                            this.classList.add("btn-danger", "in-favorite");
+                            this.disabled = true;
+
+                            const badge = document.getElementById("favorite-badge");
+                            if (badge) {
+                                badge.innerText = data.favoriteCount;
+                                badge.classList.remove("badge-bounce");
+                                void badge.offsetWidth;
+                                badge.classList.add("badge-bounce");
+                            }
+
+                            showLocalToast(`${data.productName} added to favorites!`);
+                        } else {
+                            showLocalToast(data.message);
+                        }
+                    })
+                    .catch(err => console.error("AJAX error:", err));
+            });
+        });
+    });
+</script>

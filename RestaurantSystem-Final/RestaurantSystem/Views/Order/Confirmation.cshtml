@@ -1,0 +1,93 @@
+﻿@model RestaurantSystem.Models.ViewModels.OrderSummaryVM
+@{
+    ViewData["Title"] = "Order Confirmed";
+}
+
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4 text-center p-4 p-md-5 mb-4">
+                <div class="mb-3">
+                    <i class="fa-solid fa-circle-check text-success" style="font-size: 4rem;"></i>
+                </div>
+                <h2 class="fw-bold mb-2">Thank you! Your order is confirmed.</h2>
+                <p class="text-muted mb-0">Order #@Model.OrderId · Placed on @Model.OrderDate.ToString("dd MMM yyyy, HH:mm")</p>
+            </div>
+
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <h5 class="mb-0 fw-bold">Order Details</h5>
+                    <span class="badge bg-warning text-dark px-3 py-2 rounded-pill">@Model.Status</span>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row mb-4">
+                        <div class="col-sm-4"><span class="text-muted">Dining Option</span></div>
+                        <div class="col-sm-8 fw-bold">
+                            @(Model.DiningOption == "DineIn" ? $"Dine-in · {Model.TableName}" : "Takeaway")
+                        </div>
+                        @if (Model.DiningOption == "Takeaway" && !string.IsNullOrEmpty(Model.DeliveryAddress))
+                        {
+                            <div class="col-sm-4"><span class="text-muted">Address</span></div>
+                            <div class="col-sm-8 fw-bold">@Model.DeliveryAddress</div>
+                        }
+                        <div class="col-sm-4"><span class="text-muted">Payment Method</span></div>
+                        <div class="col-sm-8 fw-bold">@Model.PaymentMethod</div>
+                    </div>
+
+                    @if (Model.DiningOption == "DineIn")
+                    {
+                        <div class="alert alert-warning d-flex align-items-start gap-2 mb-4" role="alert">
+                            <i class="fa-solid fa-circle-info mt-1"></i>
+                            <div>
+                                <strong>You're seated at @Model.TableName.</strong>
+                                Once you're done dining, please check out your table from the
+                                <a asp-controller="Order" asp-action="History" class="alert-link">My Orders</a>
+                                page — or simply let our counter staff know and they'll take care of it for you.
+                            </div>
+                        </div>
+                    }
+
+                    <div class="table-responsive">
+                        <table class="table align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Dish</th>
+                                    <th class="text-center">Qty</th>
+                                    <th class="text-end">Subtotal</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in Model.Items)
+                                {
+                                    <tr>
+                                        <td>@item.ProductName</td>
+                                        <td class="text-center">@item.Quantity</td>
+                                        <td class="text-end">RM @item.SubTotal.ToString("F2")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                            <tfoot>
+                                <tr class="table-light">
+                                    <td class="fw-bold" colspan="2">Total Paid</td>
+                                    <td class="text-end fw-bold text-success fs-5">RM @Model.TotalAmount.ToString("F2")</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex gap-3 justify-content-center flex-wrap">
+                <a asp-controller="Order" asp-action="DownloadReceipt" asp-route-id="@Model.OrderId" class="btn btn-outline-success px-4">
+                    <i class="fa-solid fa-file-pdf me-2"></i>Download Receipt
+                </a>
+                <a asp-controller="Order" asp-action="History" class="btn btn-outline-secondary px-4">
+                    <i class="fa-solid fa-clock-rotate-left me-2"></i>View My Orders
+                </a>
+                <a asp-controller="Home" asp-action="Menu" class="btn btn-orange px-4 fw-bold">
+                    <i class="fa-solid fa-utensils me-2"></i>Order More
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

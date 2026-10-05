@@ -1,0 +1,52 @@
+﻿@{
+    ViewData["Title"] = "Login";
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-4 bg-white p-5 rounded-4 shadow-sm">
+            <h2 class="fw-bold mb-4 text-center text-dark">Sign In</h2>
+
+            @if (TempData["Info"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show small" role="alert">
+                    <i class="fa-solid fa-circle-check me-1"></i> @TempData["Info"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+
+            @if (ViewBag.Error != null)
+            {
+                <div class="alert alert-danger">@ViewBag.Error</div>
+            }
+
+            <form asp-action="Login" method="post">
+                <div class="mb-3">
+                    <label class="form-label text-muted">Username</label>
+                    <input type="text" name="username" class="form-control" placeholder="Enter your username" required />
+                </div>
+                <div class="mb-4">
+                    <label class="form-label text-muted">Password</label>
+                    <input type="password" name="password" class="form-control" placeholder="••••••••" required />
+                </div>
+                <div class="d-flex justify-content-between align-items-center mb-3 px-2">
+                    @* <div class="form-check">
+                    <input asp-for="RememberMe" class="form-check-input" type="checkbox" />
+                    <label asp-for="RememberMe" class="form-check-label small text-muted">Remember me</label>
+                </div> *@
+
+                    <a asp-action="PasswordRecovery" asp-controller="Account" class="text-decoration-none small text-primary fw-bold">
+                        Forgot Password?
+                    </a>
+                </div>
+                <button type="submit" class="btn btn-orange w-100 py-2 rounded-pill fw-bold">Login</button>
+            </form>
+            <div class="text-center mt-3">
+                <span class="text-muted">Don't have an account? </span>
+                <a asp-action="Register" class="text-decoration-none" style="color: #ff9f43;">Register here</a>
+            </div>
+
+
+        </div>
+    </div>
+</div>

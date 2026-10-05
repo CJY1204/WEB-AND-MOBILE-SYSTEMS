@@ -1,0 +1,80 @@
+﻿@model RestaurantSystem.Models.ViewModels.PaymentVM
+@{
+    ViewData["Title"] = "E-Wallet Payment";
+    var rnd = new Random();
+    int cell = 8;
+    int cols = 20;
+}
+
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm rounded-4 text-center p-4 p-md-5">
+                <h4 class="fw-bold mb-1">Scan to Pay</h4>
+                <p class="text-muted mb-4">Open your e-wallet app and scan the QR code below</p>
+
+                <div class="mx-auto mb-4 p-3 bg-white border rounded-3" style="width: 220px;">
+                    <svg viewBox="0 0 160 160" width="200" height="200" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="160" height="160" fill="white" />
+                        @for (int r = 0; r < cols; r++)
+                        {
+                            for (int c = 0; c < cols; c++)
+                            {
+                                bool isCorner = (r < 5 && c < 5) || (r < 5 && c >= cols - 5) || (r >= cols - 5 && c < 5);
+                                bool fill;
+                                if (isCorner)
+                                {
+                                    fill = (r % 5 == 0 || r % 5 == 4 || c % 5 == 0 || c % 5 == 4) || (r % 5 == 2 && c % 5 == 2);
+                                }
+                                else
+                                {
+                                    fill = rnd.Next(0, 2) == 0;
+                                }
+                                if (fill)
+                                {
+                                    <rect x="@(c * cell)" y="@(r * cell)" width="@cell" height="@cell" fill="black" />
+                                }
+                            }
+                        }
+                    </svg>
+                </div>
+
+                <h3 class="fw-bold text-success mb-1">RM @Model.GrandTotal.ToString("F2")</h3>
+                <p class="text-muted mb-4">E-Wallet Payment</p>
+
+                <div id="waitingState">
+                    <div class="spinner-border text-warning mb-2" role="status">
+                        <span class="visually-hidden">Waiting...</span>
+                    </div>
+                    <p class="text-muted small mb-0">Waiting for payment confirmation...</p>
+                </div>
+
+                <div id="successState" class="d-none">
+                    <i class="fa-solid fa-circle-check text-success mb-2" style="font-size: 3rem;"></i>
+                    <p class="fw-bold text-success mb-0">Payment Successful!</p>
+                    <p class="text-muted small">Redirecting to your order confirmation...</p>
+                </div>
+
+                <form id="confirmForm" asp-action="EWalletConfirm" asp-controller="Order" method="post" class="d-none">
+                    @Html.AntiForgeryToken()
+                </form>
+
+                <a asp-action="Payment" asp-controller="Order" class="btn btn-outline-secondary btn-sm mt-4">
+                    <i class="fa-solid fa-arrow-left me-2"></i>Cancel and choose another method
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Simulate QR payment: wait 3 seconds to show success, then auto-submit after 1.2 seconds
+    setTimeout(function () {
+        document.getElementById('waitingState').classList.add('d-none');
+        document.getElementById('successState').classList.remove('d-none');
+
+        setTimeout(function () {
+            document.getElementById('confirmForm').submit();
+        }, 1200);
+    }, 3000);
+</script>
